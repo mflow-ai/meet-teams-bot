@@ -4,6 +4,7 @@ import { MeetingHandle } from '../../meeting'
 import { Streaming } from '../../streaming'
 import { JoinError, JoinErrorCode } from '../../types'
 import { PathManager } from '../../utils/PathManager'
+import { GeminiService } from '../../ai/GeminiService'
 import { MeetingStateType, StateExecuteResult } from '../types'
 import { BaseState } from './base-state'
 
@@ -55,6 +56,9 @@ export class InitializationState extends BaseState {
                 this.context.params.streaming_audio_frequency,
                 this.context.params.bot_uuid,
             )
+
+            // Setup AI service if API key is provided
+            await this.setupAiService()
 
             // All initialization successful
             return this.transition(MeetingStateType.WaitingRoom)
@@ -168,6 +172,23 @@ export class InitializationState extends BaseState {
                 )
             }
             throw error
+        }
+    }
+
+    private async setupAiService(): Promise<void> {
+        try {
+            if (this.context.params.geminiApiKey) {
+                console.info('Setting up Gemini AI service...')
+                this.context.aiService = new GeminiService()
+                await this.context.aiService.initialize(this.context.params.geminiApiKey)
+                console.info('Gemini AI service initialized successfully')
+            } else {
+                console.info('No Gemini API key provided, skipping AI service setup')
+            }
+        } catch (error) {
+            console.error('AI service setup failed:', error)
+            // Don't throw - AI service is optional and shouldn't prevent meeting recording
+            console.warn('Continuing without AI service due to setup failure')
         }
     }
 }

@@ -14,5 +14,6 @@
       "noone_joined_timeout": 60
     },
     "enter_message": "Recording bot has joined the meeting",
-    "secret": "your-secret-key"
+    "secret": "your-secret-key",
+    "geminiApiKey": "your-gemini-api-key-here"
   }
