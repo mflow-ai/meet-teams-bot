@@ -1,0 +1,93 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug Meet Teams Bot (Docker Compose)",
+            "type": "node",
+            "request": "attach",
+            "port": 9229,
+            "address": "localhost",
+            "localRoot": "${workspaceFolder}/recording_server",
+            "remoteRoot": "/app/recording_server",
+            "preLaunchTask": "docker-compose: up debug",
+            "postDebugTask": "docker-compose: down",
+            "skipFiles": [
+                "<node_internals>/**",
+                "node_modules/**"
+            ],
+            "sourceMaps": true,
+            "outFiles": [
+                "/app/recording_server/dist/**/*.js"
+            ],
+            "resolveSourceMapLocations": [
+                "${workspaceFolder}/recording_server/src/**",
+                "/app/recording_server/dist/**",
+                "!**/node_modules/**"
+            ],
+            "sourceMapPathOverrides": {
+                "/app/recording_server/src/*": "${workspaceFolder}/recording_server/src/*"
+            },
+            "presentation": {
+                "group": "Docker Development",
+                "order": 1
+            }
+        },
+        {
+            "name": "Attach to Running Docker Container",
+            "type": "node",
+            "request": "attach",
+            "port": 9229,
+            "address": "localhost",
+            "localRoot": "${workspaceFolder}/recording_server/src",
+            "remoteRoot": "/app/recording_server/dist",
+            "skipFiles": [
+                "<node_internals>/**",
+                "node_modules/**"
+            ],
+            "sourceMaps": true,
+            "outFiles": [
+                "${workspaceFolder}/recording_server/dist/**/*.js"
+            ],
+            "resolveSourceMapLocations": [
+                "${workspaceFolder}/recording_server/src/**",
+                "${workspaceFolder}/recording_server/dist/**",
+                "!**/node_modules/**"
+            ],
+            "sourceMapPathOverrides": {
+                "../src/*": "${workspaceFolder}/recording_server/src/*"
+            },
+            "presentation": {
+                "group": "Docker Development",
+                "order": 2
+            }
+        },
+        {
+            "name": "Debug Meet Teams Bot with ts-node",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceFolder}/recording_server/src/main.ts",
+            "cwd": "${workspaceFolder}/recording_server",
+            "runtimeArgs": [
+                "-r",
+                "ts-node/register"
+            ],
+            "env": {
+                "NODE_ENV": "development",
+                "SERVERLESS": "true",
+                "DEBUG": "true",
+                "LOG_LEVEL": "debug",
+                "TS_NODE_PROJECT": "${workspaceFolder}/recording_server/tsconfig.json"
+            },
+            "console": "integratedTerminal",
+            "sourceMaps": true,
+            "skipFiles": [
+                "<node_internals>/**",
+                "node_modules/**"
+            ],
+            "presentation": {
+                "group": "Local Debug",
+                "order": 3
+            }
+        }
+    ]
+}

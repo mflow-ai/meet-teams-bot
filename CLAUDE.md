@@ -49,13 +49,15 @@ The system consists of two main components:
 
 ## Key Technologies
 
-- **TypeScript 5.4+** with Node.js 14.16-18
+- **TypeScript 5.4+** with Node.js 18.12+
 - **Playwright** for browser automation
 - **Express.js** for API endpoints
 - **Winston** for structured logging
 - **WebSockets** (`ws`) for real-time communication
 - **FFmpeg** for media processing
 - **Redis** + **RabbitMQ** (normal mode) or **stdin** (serverless mode)
+- **tsup** for fast TypeScript compilation
+- **Docker Compose** for debugging support
 
 **✅ GEMINI DEPENDENCIES:**
 - **`@google/genai`**: For Gemini Live API interaction with Session/Live classes
@@ -70,10 +72,13 @@ The system consists of two main components:
 pnpm install                # Install dependencies
 
 # Build and development
-pnpm run build              # Compile TypeScript
+pnpm run build              # Compile TypeScript with tsup
+pnpm run watch              # Watch mode with tsup
 pnpm run watch-dev          # Development with hot reload
 pnpm run start              # Run compiled application
 pnpm run start-serverless   # Serverless mode (reads JSON from stdin)
+pnpm run start:debug        # Run with debugger on port 9229
+pnpm run start-serverless:debug  # Serverless debug mode
 
 # Chrome extension
 pnpm run generate_extension_key  # Generate extension key (required once)
@@ -89,38 +94,47 @@ pnpm run format:check       # Check formatting without fixing
 ./run_bot.sh build          # Build Docker image
 ./run_bot.sh run params.json    # Run with config file
 ./run_bot.sh run-json '{...}'   # Run with inline JSON
+
+# Container debugging
+docker-compose up app       # Start with debugging (port 9229)
+docker-compose up app-no-debug  # Start without debugging
 ```
 
 ## Core File Structure
 
 ```
-recording_server/src/
-├── main.ts                 # Entry point, handles both normal and serverless modes
-├── meeting.ts              # MeetingHandle class - main meeting orchestrator
-├── server.ts               # Express server setup
-├── types.ts                # TypeScript definitions for MeetingParams and core types
-├── meeting/
-│   ├── meet.ts            # Google Meet platform implementation
-│   ├── teams.ts           # Microsoft Teams platform implementation
-│   └── {meet,teams}/closeMeeting.ts  # Platform-specific cleanup
-├── state-machine/
-│   ├── machine.ts         # State machine implementation
-│   ├── types.ts           # State machine types and enums
-│   └── states/            # Individual state implementations
-├── recording/
-│   ├── Transcoder.ts      # FFmpeg-based video processing
-│   ├── AudioExtractor.ts  # Audio stream handling
-│   └── VideoChunkProcessor.ts  # Chunk processing
-├── browser/
-│   ├── browser.ts         # Playwright browser setup
-│   └── page-logger.ts     # Browser page logging
-├── utils/
-│   ├── Logger.ts          # Winston logging setup
-│   ├── S3Uploader.ts      # S3 upload functionality
-│   └── PathManager.ts     # File path management
-└── api/
-    ├── methods.ts         # API client methods
-    └── types.ts           # API type definitions
+recording_server/
+├── src/
+│   ├── main.ts             # Entry point, handles both normal and serverless modes
+│   ├── meeting.ts          # MeetingHandle class - main meeting orchestrator
+│   ├── server.ts           # Express server setup
+│   ├── types.ts            # TypeScript definitions for MeetingParams and core types
+│   ├── meeting/
+│   │   ├── meet.ts        # Google Meet platform implementation
+│   │   ├── teams.ts       # Microsoft Teams platform implementation
+│   │   └── {meet,teams}/closeMeeting.ts  # Platform-specific cleanup
+│   ├── state-machine/
+│   │   ├── machine.ts     # State machine implementation
+│   │   ├── types.ts       # State machine types and enums
+│   │   └── states/        # Individual state implementations
+│   ├── recording/
+│   │   ├── Transcoder.ts  # FFmpeg-based video processing
+│   │   ├── AudioExtractor.ts  # Audio stream handling
+│   │   └── VideoChunkProcessor.ts  # Chunk processing
+│   ├── browser/
+│   │   ├── browser.ts     # Playwright browser setup
+│   │   └── page-logger.ts # Browser page logging
+│   ├── utils/
+│   │   ├── Logger.ts      # Winston logging setup
+│   │   ├── S3Uploader.ts  # S3 upload functionality
+│   │   └── PathManager.ts # File path management
+│   └── api/
+│       ├── methods.ts     # API client methods
+│       └── types.ts       # API type definitions
+├── dist/                   # Compiled output (tsup)
+├── tsup.config.ts         # Build configuration
+├── tsconfig.json          # TypeScript configuration
+└── docker-compose.yml     # Debugging setup
 
 ✅ IMPLEMENTED AI INTEGRATION:
 ├── ai/
@@ -268,6 +282,26 @@ Located in `chrome_extension/`:
 - Automatic S3 log upload after meeting completion
 - Console and file output with rotation
 
+## Build System & Debugging
+
+**✅ TSUP BUILD SYSTEM:**
+- **Fast Compilation**: tsup provides faster builds than tsc
+- **Source Maps**: Enabled for debugging support
+- **Output Directory**: `dist/` (migrated from `build/`)
+- **Watch Mode**: `pnpm run watch` for development
+- **Node.js Target**: Optimized for Node.js 18
+
+**✅ CONTAINER DEBUGGING:**
+- **VS Code Integration**: `.vscode/launch.json` with container attach
+- **Docker Compose**: Separate services for debug/non-debug modes
+- **Inspector Port**: 9229 exposed for external debuggers
+- **Source Mapping**: Container paths mapped to local workspace
+
+**✅ DEVELOPMENT WORKFLOW:**
+- **Hot Reload**: `pnpm run watch-dev` with ts-node
+- **Container Debug**: F5 in VS Code auto-starts container with debugging
+- **Path Mapping**: `/app/recording_server/src` ↔ `./recording_server/src`
+
 ## Common Patterns
 
 - **Platform Detection**: URL-based detection in `main.ts:detectMeetingProvider()`
@@ -305,3 +339,10 @@ Located in `chrome_extension/`:
 - Virtual microphone setup for audio injection
 - `Transcoder.ts` enhancement for GCS chunk upload
 - `streaming.ts` integration with AI service pipeline
+
+**✅ BUILD & DEBUG NOTES:**
+- tsup outputs to `dist/` directory (not `build/`)
+- VS Code debugger requires Docker Compose to be running
+- Source maps enable TypeScript debugging in container
+- Inspector port 9229 must be available for debugging
+- Container debugging works with both local and remote development

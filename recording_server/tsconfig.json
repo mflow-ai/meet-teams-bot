@@ -18,7 +18,7 @@
     "strictNullChecks": false,
     "esModuleInterop": true,
     "types": ["jest", "node"],
-    "outDir": "./build"
+    "outDir": "./dist"
   },
   "include": [
     "src/**/*",

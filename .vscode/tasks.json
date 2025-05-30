@@ -1,0 +1,223 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build",
+            "type": "shell",
+            "command": "pnpm",
+            "args": ["run", "build"],
+            "options": {
+                "cwd": "${workspaceFolder}/recording_server"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "silent",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "problemMatcher": "$tsc"
+        },
+        {
+            "label": "build:dev",
+            "type": "shell",
+            "command": "pnpm",
+            "args": ["run", "build"],
+            "options": {
+                "cwd": "${workspaceFolder}/recording_server"
+            },
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "silent",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "problemMatcher": "$tsc"
+        },
+        {
+            "label": "watch",
+            "type": "shell",
+            "command": "pnpm",
+            "args": ["run", "watch"],
+            "options": {
+                "cwd": "${workspaceFolder}/recording_server"
+            },
+            "group": "build",
+            "isBackground": true,
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": {
+                "owner": "typescript",
+                "fileLocation": "relative",
+                "pattern": {
+                    "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+                    "file": 1,
+                    "line": 2,
+                    "column": 3,
+                    "severity": 4,
+                    "message": 5
+                },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": "^.*Starting compilation in watch mode.*$",
+                    "endsPattern": "^.*Found 0 errors\\. Watching for file changes\\.$|^.*Compilation completed\\.$"
+                }
+            }
+        },
+        {
+            "label": "test",
+            "type": "shell",
+            "command": "pnpm",
+            "args": ["test"],
+            "options": {
+                "cwd": "${workspaceFolder}/recording_server"
+            },
+            "group": "test",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "docker:build-dev",
+            "type": "shell",
+            "command": "./run_bot.sh",
+            "args": ["build-dev"],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "docker:dev",
+            "type": "shell",
+            "command": "./run_bot.sh",
+            "args": ["dev", "params.json"],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Start Docker Dev Mode",
+            "type": "shell",
+            "command": "docker-compose",
+            "args": ["up", "--build", "app"],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "build",
+            "isBackground": true,
+            "problemMatcher": {
+                "owner": "docker-dev",
+                "pattern": {
+                    "regexp": "^(.*)$",
+                    "file": 1
+                },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": "^.*Starting application in DEVELOPMENT mode.*$",
+                    "endsPattern": "^.*Debugger listening on ws://.*$"
+                }
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "new",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "runOptions": {
+                "instanceLimit": 1
+            }
+        },
+        {
+            "label": "docker-compose: up debug",
+            "type": "shell",
+            "command": "bash",
+            "args": ["-c", "docker build --build-arg BUILD_MODE=development --build-arg ENABLE_DEBUG=true -t meet-teams-bot:debug . && cat ${input:configFile} | docker run -i --rm -p 9229:9229 -v $(pwd)/recordings:/app/recording_server/data meet-teams-bot:debug node --inspect=0.0.0.0:9229 dist/main.js"],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "build",
+            "isBackground": true,
+            "problemMatcher": {
+                "owner": "docker-debug",
+                "pattern": {
+                    "regexp": "^(.*)$",
+                    "file": 1
+                },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": "^.*Starting application.*$",
+                    "endsPattern": "^.*Debugger listening on.*$"
+                }
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "new",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "runOptions": {
+                "instanceLimit": 1
+            }
+        },
+        {
+            "label": "docker-compose: down",
+            "type": "shell",
+            "command": "bash",
+            "args": ["-c", "docker stop $(docker ps -q --filter ancestor=meet-teams-bot:debug) || echo 'No debug containers running'"],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "silent",
+                "focus": false,
+                "panel": "shared"
+            }
+        }
+    ],
+    "inputs": [
+        {
+            "id": "configFile",
+            "description": "Select configuration file",
+            "type": "pickString",
+            "options": [
+                "params.json",
+            ],
+            "default": "params.json"
+        }
+    ]
+}

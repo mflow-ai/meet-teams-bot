@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILD_MODE: development
+        ENABLE_DEBUG: "true"
+    volumes:
+      # Map source files for debugging
+      - ./recording_server/src:/app/recording_server/src:ro
+      # Don't mount dist - let container use its built version
+      - ./recordings:/app/recording_server/data
+      # Mount params.json for easy access
+      - ./params.json:/app/params.json:ro
+    ports:
+      - "9229:9229"  # Debug port
+    environment:
+      - NODE_ENV=development
+      - SERVERLESS=true
+      - DISPLAY=:99
+      - ENABLE_DEBUG=true
+    stdin_open: true
+    tty: true
+    command: ["node", "--inspect=0.0.0.0:9229", "dist/main.js"]
+
+  app-no-debug:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILD_MODE: development
+        ENABLE_DEBUG: "false"
+    volumes:
+      - ./recordings:/app/recording_server/data
+    environment:
+      - NODE_ENV=development
+      - SERVERLESS=true
+      - DISPLAY=:99
+      - ENABLE_DEBUG=false
+    stdin_open: true
+    tty: true
+    command: ["node", "dist/main.js"]
+
+  # Production service (for reference)
+  app-prod:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILD_MODE: production
+        ENABLE_DEBUG: "false"
+    volumes:
+      - ./recordings:/app/recording_server/data
+    environment:
+      - NODE_ENV=production
+      - SERVERLESS=true
+      - DISPLAY=:99
+      - ENABLE_DEBUG=false
+    stdin_open: true
+    tty: true

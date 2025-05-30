@@ -58,23 +58,24 @@ The bot uses a sophisticated state machine with these states:
 
 ### Prerequisites
 
-- Node.js 14.16 or higher (recommended: 16.x)
+- Node.js 18.12 or higher (recommended: 18.x)
 - Chrome/Chromium browser
 - FFmpeg installed on system
-- Redis (for queue management)
-- RabbitMQ (for message queuing)
+- Docker and Docker Compose (for debugging)
+- Redis (for queue management, optional in serverless mode)
+- RabbitMQ (for message queuing, optional in serverless mode)
 
 ### Installation
 
 ```bash
 # Install dependencies
-npm install
+pnpm install
 
 # Generate browser extension key
-npm run generate_extension_key
+pnpm run generate_extension_key
 
 # Build the application
-npm run build
+pnpm run build
 ```
 
 ### Configuration
@@ -94,28 +95,72 @@ export SERVERLESS=true  # For containerized deployment
 
 ```bash
 # Development with hot reload
-npm run watch-dev
+pnpm run watch-dev
 
 # Build and start
-npm run build
-npm start
+pnpm run build
+pnpm start
 
 # Serverless mode (reads from stdin)
-npm run start-serverless
+pnpm run start-serverless
+
+# Debug mode (with inspector)
+pnpm run start:debug
+pnpm run start-serverless:debug
+```
+
+### 🐛 **Container Debugging**
+
+The project uses a single Dockerfile with build arguments for different modes:
+
+```bash
+# Start debug container (with VS Code integration)
+docker-compose up app
+
+# Start without debugging
+docker-compose up app-no-debug
+
+# Production mode
+docker-compose up app-prod
+```
+
+**Build Modes:**
+- **Development + Debug**: `BUILD_MODE=development ENABLE_DEBUG=true`
+- **Development**: `BUILD_MODE=development ENABLE_DEBUG=false`
+- **Production**: `BUILD_MODE=production ENABLE_DEBUG=false`
+
+**VS Code Integration:**
+1. Open project root in VS Code
+2. Set breakpoints in TypeScript source files
+3. Use "Debug Meet Teams Bot (Docker Compose)" configuration
+4. Select your configuration file (params.json or params2.json) when prompted
+5. Container automatically starts with `--inspect=0.0.0.0:9229` and loads your config
+6. Source maps provide direct TypeScript debugging
+
+**Manual Docker Build:**
+```bash
+# Development with debugging
+docker build --build-arg BUILD_MODE=development --build-arg ENABLE_DEBUG=true -t meet-teams-bot:debug .
+
+# Production
+docker build --build-arg BUILD_MODE=production --build-arg ENABLE_DEBUG=false -t meet-teams-bot:prod .
 ```
 
 ## Available Scripts
 
 - `start` - Run the built application
 - `start-serverless` - Run in serverless mode (reads JSON from stdin)
-- `build` - Compile TypeScript to JavaScript
-- `watch` - Watch mode for development
-- `watch-dev` - Development mode with hot reload
+- `start:debug` - Run with debugger enabled on port 9229
+- `start-serverless:debug` - Serverless mode with debugging
+- `build` - Compile TypeScript with tsup (outputs to `dist/`)
+- `watch` - Watch mode with tsup for development
+- `watch-dev` - Development mode with ts-node hot reload
 - `format` - Format code with Prettier
 - `test` - Run Jest tests
 - `test:watch` - Run tests in watch mode
 - `test:coverage` - Generate test coverage report
 - `generate_extension_key` - Generate Chrome extension key
+- `clean` - Remove build artifacts and temporary files
 
 ## API Endpoints
 
@@ -162,17 +207,38 @@ Initialization → Joining → InCall → Cleanup
 
 Each state handles specific responsibilities and error conditions, ensuring the bot can recover from various failure scenarios.
 
+## Build System
+
+The project uses **tsup** for fast TypeScript compilation:
+
+- **Output Directory**: `dist/` (instead of `build/`)
+- **Source Maps**: Enabled for debugging
+- **Target**: Node.js 18
+- **Format**: CommonJS for compatibility
+- **Watch Mode**: Fast incremental builds
+
+Configuration in `tsup.config.ts`:
+```typescript
+export default defineConfig({
+  entry: ['src/main.ts'],
+  format: ['cjs'],
+  outDir: 'dist',
+  sourcemap: true,
+  target: 'node18'
+})
+```
+
 ## Testing
 
 ```bash
 # Run all tests
-npm test
+pnpm test
 
 # Run tests in watch mode
-npm run test:watch
+pnpm run test:watch
 
 # Generate coverage report
-npm run test:coverage
+pnpm run test:coverage
 ```
 
 ## Logging
@@ -233,7 +299,23 @@ Enable debug logging:
 ```bash
 export DEBUG=true
 export LOG_LEVEL=debug
-npm run watch-dev
+pnpm run watch-dev
+```
+
+### Container Debugging
+
+For debugging in Docker containers:
+
+```bash
+# Use VS Code debugger (recommended)
+# 1. Set breakpoints in TypeScript files
+# 2. Press F5 or use "Debug Meet Teams Bot" configuration
+# 3. Container starts automatically with debugging enabled
+
+# Manual debugging connection
+# 1. Start container: docker-compose up app
+# 2. Connect debugger to localhost:9229
+# 3. Source maps automatically map to ./recording_server/src
 ```
 
 ## Contributing

@@ -242,6 +242,62 @@ Sample apps, automation workflows, and integration patterns
 echo '{"meeting_url": "...", ...}' | SERVERLESS=true npm run start-serverless
 ```
 
+### 🐛 **Container Debugging**
+The project uses a single Dockerfile with build arguments for different modes:
+
+```bash
+# Start debugging container
+docker-compose up app
+
+# Or run without debugging
+docker-compose up app-no-debug
+
+# Production mode
+docker-compose up app-prod
+```
+
+**Build Modes:**
+- **Development + Debug**: `BUILD_MODE=development ENABLE_DEBUG=true`
+- **Development**: `BUILD_MODE=development ENABLE_DEBUG=false`  
+- **Production**: `BUILD_MODE=production ENABLE_DEBUG=false`
+
+**VS Code Debug Setup:**
+1. Open project in VS Code
+2. Set breakpoints in TypeScript source files  
+3. Press F5 or select "Debug Meet Teams Bot (Docker Compose)"
+4. VS Code will prompt you to select a configuration file (params.json or params2.json)
+5. Container builds, starts with debugging, and receives your configuration via stdin
+6. Debugger attaches automatically to port 9229
+
+**How it works:**
+- Uses `docker run -i` (like run_bot.sh) instead of docker-compose
+- Pipes selected JSON config directly to container's stdin
+- Container reads config in serverless mode via `process.stdin`
+
+**Alternative Methods:**
+```bash
+# Method 1: Use docker-compose (requires manual stdin input)
+docker-compose up app
+# Then manually paste JSON config when container starts
+
+# Method 2: Direct docker run (same as VS Code uses)
+docker build --build-arg BUILD_MODE=development --build-arg ENABLE_DEBUG=true -t meet-teams-bot:debug .
+cat params.json | docker run -i -p 9229:9229 \
+  -v "$(pwd)/recordings:/app/recording_server/data" \
+  meet-teams-bot:debug node --inspect=0.0.0.0:9229 dist/main.js
+
+# Method 3: Production mode
+./run_bot.sh build
+./run_bot.sh run params.json
+```
+
+The debugging setup includes:
+- **Single Dockerfile**: No separate dev/prod files
+- **Configuration Selection**: VS Code prompts for params.json or params2.json
+- **Source Maps**: Debug directly in TypeScript files
+- **Container Debugging**: Full VS Code integration with proper path mapping
+- **Inspector Port**: Exposed on `localhost:9229` for external debuggers
+
 ### Production Deployment Options
 - **🐳 Docker**: Ready-to-deploy container with `./run_bot.sh`
 - **☁️ Serverless**: AWS Lambda, Google Cloud Run, Azure Functions
@@ -258,7 +314,7 @@ echo '{"meeting_url": "...", ...}' | SERVERLESS=true npm run start-serverless
 ### 📖 **Technical Documentation**
 - [Detailed Server Setup](recording_server/README.md)
 - [Docker Configuration](Dockerfile)
-- [Deployment Guide](DEPLOYMENT.md)
+- [Container Debugging Setup](.vscode/launch.json)
 - [API Documentation](https://doc.meetingBaaS.com)
 
 ### 🤝 **Community & Support**

@@ -1,5 +1,9 @@
 FROM node:18-bullseye
 
+# Build arguments for different modes
+ARG BUILD_MODE=production
+ARG ENABLE_DEBUG=false
+
 # Install system dependencies required for Playwright, Chrome extensions, Xvfb, FFmpeg and AWS CLI
 RUN apt-get update \
     && apt-get install -y \
@@ -67,7 +71,7 @@ RUN cd recording_server && pnpm run build \
 RUN ls -la /app/recording_server/chrome_extension/dist/ \
     && ls -la /app/recording_server/chrome_extension/dist/js/
 
-# Create startup script
+# Create startup script that handles both production and debug modes
 RUN echo '#!/bin/bash\n\
 echo "🖥️ Starting virtual display..."\n\
 export DISPLAY=:99\n\
@@ -80,7 +84,15 @@ sleep 2\n\
 \n\
 echo "🚀 Starting application..."\n\
 cd /app/recording_server\n\
-node build/src/main.js\n\
+\n\
+# Check if we should run in debug mode\n\
+if [ "$ENABLE_DEBUG" = "true" ]; then\n\
+    echo "🐛 Starting in debug mode on port 9229"\n\
+    exec "$@"\n\
+else\n\
+    echo "🚀 Starting in production mode"\n\
+    node dist/main.js\n\
+fi\n\
 \n\
 # Cleanup\n\
 kill $XVFB_PID 2>/dev/null || true\n\
@@ -88,8 +100,11 @@ kill $XVFB_PID 2>/dev/null || true\n\
 
 WORKDIR /app/recording_server
 
+# Set environment variables based on build mode
 ENV SERVERLESS=true
-ENV NODE_ENV=production
+ENV NODE_ENV=${BUILD_MODE}
 ENV DISPLAY=:99
+ENV ENABLE_DEBUG=${ENABLE_DEBUG}
 
 ENTRYPOINT ["/start.sh"]
+CMD ["node", "dist/main.js"]

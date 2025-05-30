@@ -1,0 +1,14 @@
+{
+    "meeting_url": "https://teams.live.com/meet/9374591386114?p=ony9doWq30Vr2ky4ZB",
+    "bot_name": "Recording Bot",
+    "speech_to_text_provider": "Default",
+    "bot_uuid": "unique-bot-identifier",
+    "recording_mode": "SpeakerView",
+    "mp4_s3_path": "recordings/output.mp4",
+    "custom_branding_bot_path": "https://picsum.photos/400/300",
+    "automatic_leave": {
+      "waiting_room_timeout": 60,
+      "noone_joined_timeout": 60
+    },
+    "enter_message": "Recording bot has joined the meeting"
+  }
