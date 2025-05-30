@@ -163,7 +163,10 @@ export class Streaming {
             client.on('close', () => {
                 console.log(`Client has left`)
                 // Safely close output WebSocket if it exists
-                if (this.output_ws && this.output_ws.readyState === WebSocket.OPEN) {
+                if (
+                    this.output_ws &&
+                    this.output_ws.readyState === WebSocket.OPEN
+                ) {
                     this.output_ws.close()
                 }
             })
@@ -182,17 +185,13 @@ export class Streaming {
             })
         })
 
-        if (
-            this.inputUrl &&
-            this.outputUrl !== this.inputUrl
-        ) {
+        if (this.inputUrl && this.outputUrl !== this.inputUrl) {
             try {
                 this.input_ws = new WebSocket(this.inputUrl)
             } catch (error) {
                 console.error(`Failed to connect to input WebSocket: ${error}`)
                 return
             }
-
 
             this.input_ws.on('open', () => {
                 console.log(`Input WebSocket opened`)
@@ -259,8 +258,10 @@ export class Streaming {
         // Safely close WebSocket connections with proper error handling
         try {
             if (this.output_ws) {
-                if (this.output_ws.readyState === WebSocket.OPEN || 
-                    this.output_ws.readyState === WebSocket.CONNECTING) {
+                if (
+                    this.output_ws.readyState === WebSocket.OPEN ||
+                    this.output_ws.readyState === WebSocket.CONNECTING
+                ) {
                     this.output_ws.close()
                 }
                 this.output_ws = null
@@ -272,8 +273,10 @@ export class Streaming {
 
         try {
             if (this.input_ws) {
-                if (this.input_ws.readyState === WebSocket.OPEN || 
-                    this.input_ws.readyState === WebSocket.CONNECTING) {
+                if (
+                    this.input_ws.readyState === WebSocket.OPEN ||
+                    this.input_ws.readyState === WebSocket.CONNECTING
+                ) {
                     this.input_ws.close()
                 }
                 this.input_ws = null
@@ -300,7 +303,7 @@ export class Streaming {
 
         // Reset the static instance
         Streaming.instance = null
-        
+
         console.log('Streaming service stopped successfully')
     }
 
@@ -361,7 +364,9 @@ export class Streaming {
 
         try {
             // Obtenir le chemin du fichier
-            const soundLogPath = PathManager.getInstance(this.botId).getSoundLogPath()
+            const soundLogPath = PathManager.getInstance(
+                this.botId,
+            ).getSoundLogPath()
             // Write directly to file
             await fs.promises.appendFile(soundLogPath, logEntry)
         } catch (error) {
@@ -380,10 +385,7 @@ export class Streaming {
         // Traiter les chunks stockés pendant la pause
         for (const message of this.pausedChunks) {
             // Réutiliser la logique de traitement des messages
-            if (
-                this.output_ws &&
-                message instanceof Buffer
-            ) {
+            if (this.output_ws && message instanceof Buffer) {
                 const uint8Array = new Uint8Array(message)
                 const f32Array = new Float32Array(uint8Array.buffer)
 
@@ -484,5 +486,4 @@ export class Streaming {
     public getCurrentSoundLevel(): number {
         return this.currentSoundLevel
     }
-
 }

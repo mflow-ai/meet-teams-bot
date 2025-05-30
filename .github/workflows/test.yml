@@ -103,7 +103,7 @@ jobs:
         run: pnpm run build
 
       - name: Run tests
-        run: pnpm test -- --passWithNoTests
+        run: pnpm test
 
       - name: Check formatting
         run: pnpm run format -- --check
