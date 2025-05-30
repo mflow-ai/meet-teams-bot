@@ -102,6 +102,9 @@ importers:
       '@types/ws':
         specifier: 8.5.12
         version: 8.5.12
+      jest:
+        specifier: ^29.7.0
+        version: 29.7.0(@types/node@14.14.45)(ts-node@10.9.2(@types/node@14.14.45)(typescript@5.8.3))
       prettier:
         specifier: 3.3.3
         version: 3.3.3
