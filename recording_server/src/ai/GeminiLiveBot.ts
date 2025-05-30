@@ -1,14 +1,21 @@
-import { Live, Session } from '@google/genai'
+import {
+    GoogleGenAI,
+    Session,
+    Modality,
+    LiveServerMessage,
+    Blob,
+} from '@google/genai'
 import { IMeetingParticipantBot } from './IMeetingParticipantBot'
 import {
     MeetingParams,
     BotConfiguration,
     AudioChunkMetadata,
     AudioResponse,
+    VideoChunkMetadata,
 } from '../types'
 
 export class GeminiLiveBot implements IMeetingParticipantBot {
-    private liveApi: Live | null = null
+    private genAI: GoogleGenAI | null = null
     private session: Session | null = null
     private initialized = false
     private audioResponseCallback: ((response: AudioResponse) => void) | null =
@@ -24,7 +31,9 @@ export class GeminiLiveBot implements IMeetingParticipantBot {
                 )
             }
 
-            this.liveApi = new Live(apiKey)
+            this.genAI = new GoogleGenAI({
+                apiKey: apiKey,
+            })
             this.initialized = true
             console.log('GeminiLiveBot initialized successfully')
         } catch (error) {
@@ -46,25 +55,35 @@ export class GeminiLiveBot implements IMeetingParticipantBot {
             // Default to gemini-2.0-flash-exp for live sessions
             const modelName = sessionConfig?.modelName || 'gemini-2.0-flash-exp'
 
-            this.session = await this.liveApi!.connect({
+            this.session = await this.genAI!.live.connect({
                 model: modelName,
-                generationConfig: {
-                    responseModalities: ['AUDIO'], // Only audio responses
+                config: {
+                    responseModalities: [Modality.AUDIO], // Only audio responses
+                },
+                callbacks: {
+                    onopen: () => {
+                        console.log(
+                            'GeminiLiveBot: WebSocket connection opened',
+                        )
+                    },
+                    onmessage: (message: LiveServerMessage) => {
+                        // Handle incoming messages here
+                        console.log('GeminiLiveBot: Received message', message)
+                        // TODO: Parse and handle audio responses from message.content
+                    },
+                    onerror: (error: ErrorEvent) => {
+                        console.error('GeminiLiveBot: WebSocket error', error)
+                    },
+                    onclose: (event: CloseEvent) => {
+                        console.log(
+                            'GeminiLiveBot: WebSocket connection closed',
+                            event,
+                        )
+                    },
                 },
             })
 
-            // Set up session event handlers
-            this.session.on('audio', (audioData: Uint8Array) => {
-                if (this.audioResponseCallback) {
-                    const response: AudioResponse = {
-                        audioData: audioData,
-                        metadata: {
-                            timestamp: Date.now(),
-                        },
-                    }
-                    this.audioResponseCallback(response)
-                }
-            })
+            // Audio responses will be handled in the onmessage callback above
 
             console.log(
                 `GeminiLiveBot session started with model: ${modelName}`,
@@ -95,10 +114,15 @@ export class GeminiLiveBot implements IMeetingParticipantBot {
                     ? new Uint8Array(audioData)
                     : audioData
 
-            // Send audio to Gemini Live session
-            await this.session.send({
+            // Send audio to Gemini Live session using sendRealtimeInput
+            // Convert audioBytes to base64 string for the Blob_2 format
+            const audioBase64 = Buffer.from(audioBytes).toString('base64')
+            const audioBlob: Blob = {
+                data: audioBase64,
                 mimeType: 'audio/pcm',
-                data: audioBytes,
+            }
+            this.session.sendRealtimeInput({
+                media: audioBlob,
             })
 
             console.log(
@@ -114,6 +138,48 @@ export class GeminiLiveBot implements IMeetingParticipantBot {
         }
     }
 
+    async sendVideoChunk(
+        videoData: Buffer | Uint8Array,
+        metadata?: VideoChunkMetadata,
+    ): Promise<void> {
+        if (!this.session) {
+            console.warn(
+                'GeminiLiveBot: No active session, ignoring video chunk',
+            )
+            return
+        }
+
+        try {
+            // Convert Buffer to Uint8Array if needed
+            const videoBytes =
+                videoData instanceof Buffer
+                    ? new Uint8Array(videoData)
+                    : videoData
+
+            // Send video to Gemini Live session using sendRealtimeInput
+            // Convert videoBytes to base64 string for the Blob_2 format
+            const videoBase64 = Buffer.from(videoBytes).toString('base64')
+            const videoBlob: Blob = {
+                data: videoBase64,
+                mimeType: metadata?.format || 'video/webm', // Default to webm format
+            }
+            this.session.sendRealtimeInput({
+                media: videoBlob,
+            })
+
+            console.log(
+                `GeminiLiveBot: Sent video chunk of ${videoBytes.length} bytes`,
+                {
+                    metadata,
+                    timestamp: metadata?.timestamp || Date.now(),
+                },
+            )
+        } catch (error) {
+            console.error('Failed to send video chunk to GeminiLiveBot:', error)
+            // Don't throw - video streaming should be resilient to individual chunk failures
+        }
+    }
+
     onAudioResponse(callback: (response: AudioResponse) => void): void {
         this.audioResponseCallback = callback
         console.log('GeminiLiveBot audio response callback registered')
@@ -122,7 +188,7 @@ export class GeminiLiveBot implements IMeetingParticipantBot {
     async endSession(): Promise<void> {
         try {
             if (this.session) {
-                await this.session.disconnect()
+                this.session.close()
                 this.session = null
             }
             this.audioResponseCallback = null
@@ -136,6 +202,6 @@ export class GeminiLiveBot implements IMeetingParticipantBot {
     }
 
     isReady(): boolean {
-        return this.initialized && this.liveApi !== null
+        return this.initialized && this.genAI !== null
     }
 }

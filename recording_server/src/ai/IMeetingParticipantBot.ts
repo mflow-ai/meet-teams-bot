@@ -3,6 +3,7 @@ import {
     BotConfiguration,
     AudioChunkMetadata,
     AudioResponse,
+    VideoChunkMetadata,
 } from '../types'
 
 /**
@@ -34,6 +35,16 @@ export interface IMeetingParticipantBot {
     sendAudioChunk(
         audioData: Buffer | Uint8Array,
         metadata?: AudioChunkMetadata,
+    ): Promise<void>
+
+    /**
+     * Send video chunk to the bot for processing
+     * @param videoData - Video data chunk (Buffer or Uint8Array)
+     * @param metadata - Metadata about the video chunk (timestamp, dimensions, etc.)
+     */
+    sendVideoChunk(
+        videoData: Buffer | Uint8Array,
+        metadata?: VideoChunkMetadata,
     ): Promise<void>
 
     /**

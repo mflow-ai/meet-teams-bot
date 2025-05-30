@@ -178,3 +178,11 @@ export interface AudioResponse {
         duration?: number
     }
 }
+
+export interface VideoChunkMetadata {
+    timestamp: number
+    width?: number
+    height?: number
+    frameRate?: number
+    format?: string
+}
