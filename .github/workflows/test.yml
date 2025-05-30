@@ -16,9 +16,10 @@ jobs:
       matrix:
         node-version: [14.16, 16.x, 18.x]
 
-    defaults:
-      run:
-        working-directory: ./recording_server
+    # Fixed: Remove working-directory default since package.json is in root
+    # defaults:
+    #   run:
+    #     working-directory: ./recording_server
 
     steps:
       - name: Checkout repository
@@ -29,25 +30,31 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
-          cache-dependency-path: ./recording_server/package-lock.json
+          # Fixed: Cache dependency path should be root package-lock.json
+          cache-dependency-path: ./package-lock.json
 
       - name: Install dependencies
         run: npm ci
+        # Fixed: Run in root directory where package.json exists
 
       - name: Run TypeScript build
         run: npm run build
+        # Fixed: Run in root directory
 
       - name: Run tests
         run: npm run test
+        # Fixed: Run in root directory
 
       - name: Run test coverage
         run: npm run test:coverage
+        # Fixed: Run in root directory
 
       - name: Upload coverage reports
         if: matrix.node-version == '16.x'
         uses: codecov/codecov-action@v3
         with:
-          directory: ./recording_server/coverage
+          # Fixed: Coverage directory should be relative to root
+          directory: ./coverage
           fail_ci_if_error: false
 
   test-chrome-extension:
@@ -98,11 +105,12 @@ jobs:
         with:
           node-version: '16.x'
           cache: 'npm'
-          cache-dependency-path: ./recording_server/package-lock.json
+          # Fixed: Main cache dependency path should be root package-lock.json
+          cache-dependency-path: ./package-lock.json
 
       - name: Install recording server dependencies
         run: npm ci
-        working-directory: ./recording_server
+        # Fixed: Install root dependencies, not recording_server subdirectory
 
       - name: Install chrome extension dependencies
         run: npm ci
@@ -110,7 +118,7 @@ jobs:
 
       - name: Check recording server formatting
         run: npm run format -- --check
-        working-directory: ./recording_server
+        # Fixed: Run formatting check from root directory
 
       - name: Check chrome extension formatting
         run: npm run format -- --check
