@@ -26,6 +26,9 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+# Install pnpm globally
+RUN npm install -g pnpm@latest
+
 # Optimize FFmpeg performance settings
 ENV FFMPEG_THREAD_COUNT=0
 ENV FFMPEG_PRESET=ultrafast
@@ -43,22 +46,22 @@ RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2
 WORKDIR /app
 
 # Copy dependency descriptors first for caching
-COPY recording_server/package.json recording_server/package-lock.json ./recording_server/
-COPY recording_server/chrome_extension/package.json recording_server/chrome_extension/package-lock.json ./recording_server/chrome_extension/
+COPY recording_server/package.json recording_server/pnpm-lock.yaml ./recording_server/
+COPY recording_server/chrome_extension/package.json recording_server/chrome_extension/pnpm-lock.yaml ./recording_server/chrome_extension/
 
 # Install dependencies for the server and the extension
-RUN npm ci --prefix recording_server \
-    && npm ci --prefix recording_server/chrome_extension
+RUN pnpm install --frozen-lockfile --prefix recording_server \
+    && pnpm install --frozen-lockfile --prefix recording_server/chrome_extension
 
 # Install Playwright browsers using the local version
-RUN npx --prefix recording_server playwright install --with-deps chromium
+RUN pnpm --prefix recording_server exec playwright install --with-deps chromium
 
 # Copy the rest of the application code
 COPY recording_server ./recording_server
 
 # Build the server and the Chrome extension
-RUN npm run build --prefix recording_server \
-    && npm run build --prefix recording_server/chrome_extension
+RUN pnpm run build --prefix recording_server \
+    && pnpm run build --prefix recording_server/chrome_extension
 
 # Verify extension build
 RUN ls -la /app/recording_server/chrome_extension/dist/ \
