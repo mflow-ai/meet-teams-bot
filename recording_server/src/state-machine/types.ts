@@ -6,6 +6,7 @@ import { MeetingHandle } from '../meeting'
 import { Streaming } from '../streaming'
 import { MeetingProviderInterface } from '../types'
 import { PathManager } from '../utils/PathManager'
+import { IMeetingParticipantBot } from '../ai/IMeetingParticipantBot'
 
 export enum MeetingStateType {
     Initialization = 'initialization',
@@ -79,6 +80,9 @@ export interface MeetingContext {
 
     // Streaming
     streamingService?: Streaming
+
+    // Meeting Participant Bot
+    meetingParticipantBot?: IMeetingParticipantBot
 
     errorTime?: number
     hasResumed?: boolean

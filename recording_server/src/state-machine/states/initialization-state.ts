@@ -4,6 +4,7 @@ import { MeetingHandle } from '../../meeting'
 import { Streaming } from '../../streaming'
 import { JoinError, JoinErrorCode } from '../../types'
 import { PathManager } from '../../utils/PathManager'
+import { GeminiLiveBot } from '../../ai/GeminiLiveBot'
 import { MeetingStateType, StateExecuteResult } from '../types'
 import { BaseState } from './base-state'
 
@@ -55,6 +56,9 @@ export class InitializationState extends BaseState {
                 this.context.params.streaming_audio_frequency,
                 this.context.params.bot_uuid,
             )
+
+            // Setup meeting participant bot if enabled
+            await this.setupMeetingParticipantBot()
 
             // All initialization successful
             return this.transition(MeetingStateType.WaitingRoom)
@@ -168,6 +172,32 @@ export class InitializationState extends BaseState {
                 )
             }
             throw error
+        }
+    }
+
+    private async setupMeetingParticipantBot(): Promise<void> {
+        try {
+            // Check if Gemini API key is available in environment
+            const geminiApiKey = process.env.GEMINI_API_KEY
+
+            if (geminiApiKey) {
+                console.info('Setting up Gemini Live Bot...')
+                this.context.meetingParticipantBot = new GeminiLiveBot()
+                await this.context.meetingParticipantBot.initialize(
+                    this.context.params,
+                )
+                console.info('Gemini Live Bot initialized successfully')
+            } else {
+                console.info(
+                    'No GEMINI_API_KEY environment variable found, skipping meeting participant bot setup',
+                )
+            }
+        } catch (error) {
+            console.error('Meeting participant bot setup failed:', error)
+            // Don't throw - meeting participant bot is optional and shouldn't prevent meeting recording
+            console.warn(
+                'Continuing without meeting participant bot due to setup failure',
+            )
         }
     }
 }

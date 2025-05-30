@@ -8,12 +8,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Meet Teams Bot is a TypeScript/Node.js application for automated meeting recording on Google Meet, Microsoft Teams, and Zoom. It's a self-hostable, privacy-first alternative that can run in both normal mode (with Redis/RabbitMQ) and serverless mode (reading from stdin).
 
-**🚧 FUTURE ENHANCEMENT - GEMINI AI INTEGRATION (NOT YET IMPLEMENTED):**
-The project is planned to be enhanced with Google's Gemini AI for live meeting understanding, allowing the bot to:
-- Stream meeting audio and video to Gemini in real-time
-- Allow Gemini to respond verbally in meetings using native audio output
-- Implement chunked recording directly to Google Cloud Storage (GCS)
-- Provide AI-powered meeting assistance and interaction
+**✅ GEMINI AI INTEGRATION - FOUNDATION IMPLEMENTED:**
+The project includes foundation for Google's Gemini AI integration for live meeting understanding:
+- `IMeetingParticipantBot` interface for AI-powered meeting bots
+- `GeminiLiveBot` implementation using `@google/genai` SDK
+- Audio/video streaming capability to Gemini Live API
+- Audio-only response handling for meeting injection
+- Environment-based configuration with `GEMINI_API_KEY`
 
 ## Architecture
 
@@ -26,21 +27,25 @@ The system consists of two main components:
 - **Media Processing**: Handles audio/video recording and transcoding with FFmpeg
 - **Multi-Platform Support**: Dedicated implementations for Meet, Teams, and Zoom
 
-**🚧 PLANNED GEMINI ENHANCEMENTS (NOT YET IMPLEMENTED):**
-- **Real-time Media Handling**: Will receive audio/video from extension and stream to Gemini API
-- **AI Service Interaction**: New `IAiService` interface with `GeminiService` implementation
-- **Audio Injection**: `OutputAudioService` to play Gemini's native audio output back into meetings
-- **Cloud Storage**: `IStorageService` interface with `GCSService` for chunked recording upload
+**✅ IMPLEMENTED GEMINI FOUNDATION:**
+- **Real-time Media Handling**: `IMeetingParticipantBot` interface for audio/video streaming
+- **AI Service Integration**: `GeminiLiveBot` using `@google/genai` Live and Session classes
+- **Audio Response Handling**: `onAudioResponse()` callback for receiving Gemini audio
+- **Modular Architecture**: Interface-based design supporting multiple AI providers
+
+**🚧 FUTURE ENHANCEMENTS:**
+- **Audio Injection**: Virtual microphone setup for playing Gemini responses in meetings
+- **Cloud Storage**: Direct GCS upload for chunked recordings
 
 ### 2. Chrome Extension (`recording_server/chrome_extension/`)
 - **Media Capture**: Records tab audio/video and sends chunks to server
 - **Speaker Detection**: Observes DOM changes to identify active speakers
 - **Platform Integration**: Specific logic for Meet and Teams DOM manipulation
 
-**🚧 PLANNED GEMINI ENHANCEMENTS (NOT YET IMPLEMENTED):**
-- Extension will continue capturing media but output will be directed to GCS and Gemini
-- Server will relay audio streams to Gemini for real-time processing
-- Video chunks may be processed for frame extraction if needed for Gemini
+**✅ GEMINI INTEGRATION READY:**
+- Extension captures media and sends to server via existing WebSocket
+- Server can relay audio/video streams to `GeminiLiveBot` for real-time processing
+- `IMeetingParticipantBot` interface supports both audio and video chunk processing
 
 ## Key Technologies
 
@@ -52,27 +57,33 @@ The system consists of two main components:
 - **FFmpeg** for media processing
 - **Redis** + **RabbitMQ** (normal mode) or **stdin** (serverless mode)
 
-**🚧 PLANNED GEMINI DEPENDENCIES (NOT YET IMPLEMENTED):**
-- **`@google/generative-ai`**: For Gemini API interaction
-- **`@google-cloud/storage`**: For GCS interaction
+**✅ GEMINI DEPENDENCIES:**
+- **`@google/genai`**: For Gemini Live API interaction with Session/Live classes
+
+**🚧 PLANNED DEPENDENCIES:**
+- **`@google-cloud/storage`**: For future GCS integration
 
 ## Development Commands
 
 ```bash
+# Package management
+pnpm install                # Install dependencies
+
 # Build and development
-npm run build                # Compile TypeScript
-npm run watch-dev           # Development with hot reload
-npm run start               # Run compiled application
-npm run start-serverless    # Serverless mode (reads JSON from stdin)
+pnpm run build              # Compile TypeScript
+pnpm run watch-dev          # Development with hot reload
+pnpm run start              # Run compiled application
+pnpm run start-serverless   # Serverless mode (reads JSON from stdin)
 
 # Chrome extension
-npm run generate_extension_key  # Generate extension key (required once)
+pnpm run generate_extension_key  # Generate extension key (required once)
 
 # Testing and quality
-npm run test                # Run Jest tests
-npm run test:watch          # Watch mode testing
-npm run test:coverage       # Generate coverage report
-npm run format              # Format with Prettier
+pnpm run test               # Run Jest tests
+pnpm run test:watch         # Watch mode testing
+pnpm run test:coverage      # Generate coverage report
+pnpm run format             # Format with Prettier
+pnpm run format:check       # Check formatting without fixing
 
 # Docker usage
 ./run_bot.sh build          # Build Docker image
@@ -111,10 +122,13 @@ recording_server/src/
     ├── methods.ts         # API client methods
     └── types.ts           # API type definitions
 
-🚧 PLANNED GEMINI FILE STRUCTURE (NOT YET IMPLEMENTED):
+✅ IMPLEMENTED AI INTEGRATION:
 ├── ai/
-│   ├── IAiService.ts      # Abstraction for AI services
-│   └── GeminiService.ts   # Gemini API implementation
+│   ├── IMeetingParticipantBot.ts  # Interface for AI-powered meeting bots
+│   ├── GeminiLiveBot.ts           # Gemini Live API implementation
+│   └── GeminiLiveBot.test.ts      # Comprehensive unit tests
+
+🚧 FUTURE ENHANCEMENTS:
 ├── audio/
 │   └── OutputAudioService.ts # Audio playback into meetings
 └── storage/
@@ -132,11 +146,15 @@ The bot follows this lifecycle:
 5. **Cleanup**: Process recordings, upload to S3, send webhooks
 6. **Error**: Handle failures and recovery
 
-**🚧 PLANNED GEMINI WORKFLOW (NOT YET IMPLEMENTED):**
-1. **Live Streaming to Gemini**: Audio/video streams sent to Gemini API during InCall state
-2. **Gemini Interaction**: Receive native audio responses and inject into meeting
-3. **Chunked Recording to GCS**: Direct upload of recording chunks to Google Cloud Storage
-4. **Post-Meeting Assembly**: Optional cloud function to assemble GCS chunks into final recording
+**✅ GEMINI WORKFLOW - FOUNDATION READY:**
+1. **Bot Initialization**: `GeminiLiveBot` initialized during state machine setup
+2. **Live Session**: Gemini Live session started with audio-only response modality
+3. **Real-time Streaming**: Audio/video chunks sent via `sendAudioChunk()`/`sendVideoChunk()`
+4. **Response Handling**: Audio responses received via `onAudioResponse()` callback
+
+**🚧 FUTURE WORKFLOW:**
+1. **Audio Injection**: Virtual microphone setup for playing responses in meetings
+2. **GCS Integration**: Direct recording upload for cloud assembly
 
 ## Configuration
 
@@ -158,10 +176,26 @@ The bot is configured via `params.json` or JSON passed to stdin (serverless mode
 }
 ```
 
-**🚧 PLANNED GEMINI CONFIGURATION (NOT YET IMPLEMENTED):**
+**✅ GEMINI CONFIGURATION:**
+Environment variable:
+```bash
+GEMINI_API_KEY=your_gemini_api_key_here
+```
+
+Optional bot configuration in `MeetingParams`:
 ```json
 {
-  "geminiApiKey": "string",
+  "botConfig": {
+    "enabled": true,
+    "provider": "gemini",
+    "modelName": "gemini-2.0-flash-exp"
+  }
+}
+```
+
+**🚧 PLANNED CONFIGURATION:**
+```json
+{
   "gcsBucketName": "string", 
   "gcsCredentialsJsonPath": "string",
   "googleCloudProjectId": "string"
@@ -181,27 +215,44 @@ The application automatically detects its mode:
 - **Serverless Mode**: Set `SERVERLESS=true`, reads JSON from stdin
 - **Zoom Mode**: Detected by meeting URL, uses separate Rust binary
 
-## Testing
+## Testing & CI/CD
 
-- Jest-based test suite with coverage reporting
-- State machine unit tests in `state-machine/` directory
-- Integration tests for meeting platform implementations
+### Testing Framework
+- **Jest Framework**: Comprehensive test suite with coverage reporting
+- **Unit Tests**: State machine, AI services, and core components
+- **Integration Tests**: Meeting platform implementations
 
-**🚧 PLANNED GEMINI TESTING (NOT YET IMPLEMENTED):**
-- Unit tests for new services (`GeminiService`, `GCSService`, `OutputAudioService`) with mocking
-- Integration tests for audio/video paths to Gemini
+### GitHub Actions CI/CD
+- **Automated Testing**: Runs on all PRs and main branch pushes
+- **Multi-Component Testing**: Recording server and Chrome extension tests
+- **Build Validation**: TypeScript compilation and Docker image builds
+- **Code Quality**: Formatting checks with Prettier
+- **Coverage Reporting**: Codecov integration for test coverage
+
+**✅ IMPLEMENTED GEMINI TESTING:**
+- Unit tests for `GeminiLiveBot` with SDK mocking
+- Initialization, session management, and streaming tests
+- Error handling and cleanup validation
+
+**🚧 FUTURE TESTING:**
+- Integration tests for audio injection pipeline
 - End-to-end tests for Gemini response → meeting audio output
 
 ## Deployment
 
 - **Docker**: Primary deployment method with `./run_bot.sh`
 - **Serverless**: Designed for AWS Lambda, Google Cloud Run, Azure Functions
-- **Environment Variables**: `SERVERLESS`, `PROFILE`, `ENVIRON`, Redis/RabbitMQ URLs
+- **Environment Variables**: `SERVERLESS`, `PROFILE`, `ENVIRON`, `GEMINI_API_KEY`, Redis/RabbitMQ URLs
+- **CI/CD**: GitHub Actions for automated testing, building, and validation
 
-**🚧 PLANNED GEMINI DEPLOYMENT (NOT YET IMPLEMENTED):**
+**✅ GEMINI DEPLOYMENT:**
+- **API Key**: Set `GEMINI_API_KEY` environment variable
+- **Docker Support**: Gemini integration works in containerized environments
+- **Rate Limiting**: Built-in error handling for API failures
+
+**🚧 FUTURE DEPLOYMENT:**
 - **Virtual Microphone Setup**: Required for audio injection (PulseAudio on Linux, VB-Cable on Windows/macOS)
 - **GCS Credentials**: Service account setup for Google Cloud Storage
-- **Gemini API Access**: API key configuration and rate limiting considerations
 
 ## Chrome Extension Development
 
@@ -225,11 +276,15 @@ Located in `chrome_extension/`:
 - **Media Processing**: Chunk-based processing with FFmpeg transcoding
 - **Extension Communication**: HTTP POST + WebSocket communication between extension and server
 
-**🚧 PLANNED GEMINI PATTERNS (NOT YET IMPLEMENTED):**
-- **Service Abstraction**: Interfaces (`IAiService`, `IStorageService`) for modularity
-- **Configuration-Driven Instantiation**: Services instantiated based on config (e.g., `aiProvider: 'gemini'`)
-- **Real-time Streaming**: Audio/video pipeline from extension → server → Gemini
+**✅ IMPLEMENTED GEMINI PATTERNS:**
+- **Service Abstraction**: `IMeetingParticipantBot` interface for AI service modularity
+- **Configuration-Driven Setup**: Bot instantiation based on environment and config
+- **Real-time Streaming**: Audio/video pipeline ready for extension → server → Gemini
+- **Error Resilience**: Graceful handling of streaming failures without stopping recording
+
+**🚧 FUTURE PATTERNS:**
 - **Audio Injection Pipeline**: Gemini native audio response → Virtual microphone → Meeting
+- **Storage Abstraction**: `IStorageService` for swappable storage backends
 
 ## Important Implementation Notes
 
@@ -239,10 +294,14 @@ Located in `chrome_extension/`:
 - Serverless mode skips Redis/RabbitMQ and webhook integrations
 - Force termination timer (5 hours) prevents runaway processes
 
-**🚧 GEMINI IMPLEMENTATION NOTES (PLANNED, NOT YET IMPLEMENTED):**
-- Virtual microphone setup is critical for audio injection
-- Service interfaces allow swapping Gemini for other AI providers (OpenAI, Anthropic)
-- `Transcoder.ts` role will evolve from creating final files to handling chunks for GCS upload
-- Existing `streaming.ts` service will be enhanced to forward audio to `IAiService`
-- Modular architecture enables future swapping of GCS for S3 or other storage backends
-- Gemini will provide native audio output, eliminating need for separate TTS services
+**✅ GEMINI IMPLEMENTATION NOTES:**
+- `IMeetingParticipantBot` interface enables swapping Gemini for other AI providers
+- `GeminiLiveBot` uses `@google/genai` SDK with Live/Session classes for real-time interaction
+- Environment variable configuration (`GEMINI_API_KEY`) for secure API access
+- Audio-only response modality configured for meeting injection readiness
+- Comprehensive error handling ensures recording continues if AI service fails
+
+**🚧 FUTURE IMPLEMENTATION:**
+- Virtual microphone setup for audio injection
+- `Transcoder.ts` enhancement for GCS chunk upload
+- `streaming.ts` integration with AI service pipeline
