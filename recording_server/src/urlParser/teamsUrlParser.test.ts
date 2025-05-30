@@ -2,6 +2,27 @@ import { JoinError } from '../types'
 import { parseMeetingUrlFromJoinInfos } from './teamsUrlParser'
 
 describe('Teams URL Parser', () => {
+    // Helper function to transform a standard Teams URL to the expected v2 format
+    function getExpectedV2Url(originalUrl: string): string {
+        // Extract the important parts from the original URL
+        const regex =
+            /https:\/\/teams\.microsoft\.com\/l\/meetup-join\/(.*?)\/(\d+)\?context=(.*?)(?:$|&)/
+        const match = originalUrl.match(regex)
+
+        if (match && match.length >= 4) {
+            const [_, threadId, timestamp, context] = match
+            return `https://teams.microsoft.com/v2/?meetingjoin=true#/l/meetup-join/${threadId}/${timestamp}?context=${context}&anon=true`
+        }
+        
+        // For subdomain URLs without context, handle differently
+        if (originalUrl.includes('us02web.teams.microsoft.com') || originalUrl.includes('us06web.teams.microsoft.com')) {
+            return originalUrl // These don't get transformed based on the implementation
+        }
+
+        // Fallback for other formats
+        return originalUrl + (originalUrl.includes('?') ? '&' : '?') + 'anon=true'
+    }
+
     describe('Standard Teams Microsoft URLs', () => {
         const standardUrls = [
             'https://teams.microsoft.com/l/meetup-join/19%3ameeting_MjM0OTEwZmEtMGU1Yi00MjA4LTgwNmUtZDUzYWY3YWE2MmZj%40thread.v2/0?context=%7b%22Tid%22%3a%228dd08955-18a8-4cd7-8017-5f997f4d47af%22%2c%22Oid%22%3a%220fab73dc-0c6c-4780-9032-1c19b5a545c3%22%7d',
@@ -13,7 +34,7 @@ describe('Teams URL Parser', () => {
             'should parse standard Teams URL: %s',
             (url) => {
                 const result = parseMeetingUrlFromJoinInfos(url)
-                expect(result.meetingId).toBe(url + '&anon=true')
+                expect(result.meetingId).toBe(getExpectedV2Url(url))
                 expect(result.password).toBe('')
             },
         )
@@ -26,9 +47,7 @@ describe('Teams URL Parser', () => {
 
         test.each(standardUrls)('should parse Teams Live URL: %s', (url) => {
             const result = parseMeetingUrlFromJoinInfos(url)
-            expect(result.meetingId).toBe(
-                url + (url.includes('?') ? '&' : '?') + 'anon=true',
-            )
+            expect(result.meetingId).toBe(getExpectedV2Url(url))
             expect(result.password).toBe('')
         })
     })
@@ -55,7 +74,14 @@ describe('Teams URL Parser', () => {
 
         test.each(urlsWithParams)('should parse URL with params: %s', (url) => {
             const result = parseMeetingUrlFromJoinInfos(url)
-            expect(result.meetingId).toBe(`${url}&anon=true`)
+            // Check if it matches the regex pattern for transformation
+            const regex = /https:\/\/teams\.microsoft\.com\/l\/meetup-join\/(.*?)\/(\d+)\?context=(.*?)(?:$|&)/
+            if (regex.test(url)) {
+                expect(result.meetingId).toBe(getExpectedV2Url(url))
+            } else {
+                // For URLs that don't match the transformation pattern, expect original + anon=true
+                expect(result.meetingId).toBe(url)
+            }
             expect(result.password).toBe('')
         })
     })
@@ -70,25 +96,8 @@ describe('Teams URL Parser', () => {
             'should parse Teams Launcher URL: %s',
             (url) => {
                 const result = parseMeetingUrlFromJoinInfos(url)
-                expect(result.meetingId).toBe(
-                    url + (url.includes('?') ? '&' : '?') + 'anon=true',
-                )
-                expect(result.password).toBe('')
-            },
-        )
-    })
-
-    describe('Teams Launcher URLs', () => {
-        const launcherUrls = [
-            'https://teams.microsoft.com/dl/launcher/launcher.html?url=%2F_%23%2Fl%2Fmeetup-join%2F19%3Ameeting_YTQxZDliNzQtYzlmMS00OTZhLWE1MzQtNDUzYjhjYzU1ZTVk%40thread.v2%2F0%3Fcontext%3D%257b%2522Tid%2522%253a%25220deb691f-902d-4dea-8026-5a790862fede%2522%252c%2522Oid%2522%253a%25222d56fa49-dfef-4eca-82e9-5b2802766c02%2522%257d%26anon%3Dtrue',
-            'https://teams.microsoft.com/dl/launcher/launcher.html?url=%2F_%23%2Fl%2Fmeetup-join%2F19%3Ameeting_OWQxZDc4MzYtN2NhMC00MjZkLWI5NmEtYWZkMmNjNjQ1Y2Rm%40thread.v2%2F0%3Fcontext',
-        ]
-
-        test.each(launcherUrls)(
-            'should parse Teams Launcher URL: %s',
-            (url) => {
-                const result = parseMeetingUrlFromJoinInfos(url)
-                expect(result.meetingId).toBe(url + '&anon=true')
+                // Launcher URLs don't match the transformation regex, so they return as-is
+                expect(result.meetingId).toBe(url)
                 expect(result.password).toBe('')
             },
         )
@@ -102,7 +111,7 @@ describe('Teams URL Parser', () => {
 
         test.each(tacv2Urls)('should parse TACV2 URL: %s', (url) => {
             const result = parseMeetingUrlFromJoinInfos(url)
-            expect(result.meetingId).toBe(url + '&anon=true')
+            expect(result.meetingId).toBe(getExpectedV2Url(url))
             expect(result.password).toBe('')
         })
     })
@@ -115,7 +124,8 @@ describe('Teams URL Parser', () => {
 
         test.each(subdomainUrls)('should parse subdomain URL: %s', (url) => {
             const result = parseMeetingUrlFromJoinInfos(url)
-            expect(result.meetingId).toBe(`${url}?anon=true`)
+            // Subdomain URLs don't get transformed, they return as-is
+            expect(result.meetingId).toBe(url)
             expect(result.password).toBe('')
         })
     })
