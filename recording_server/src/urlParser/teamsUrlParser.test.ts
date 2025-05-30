@@ -13,14 +13,19 @@ describe('Teams URL Parser', () => {
             const [_, threadId, timestamp, context] = match
             return `https://teams.microsoft.com/v2/?meetingjoin=true#/l/meetup-join/${threadId}/${timestamp}?context=${context}&anon=true`
         }
-        
+
         // For subdomain URLs without context, handle differently
-        if (originalUrl.includes('us02web.teams.microsoft.com') || originalUrl.includes('us06web.teams.microsoft.com')) {
+        if (
+            originalUrl.includes('us02web.teams.microsoft.com') ||
+            originalUrl.includes('us06web.teams.microsoft.com')
+        ) {
             return originalUrl // These don't get transformed based on the implementation
         }
 
         // Fallback for other formats
-        return originalUrl + (originalUrl.includes('?') ? '&' : '?') + 'anon=true'
+        return (
+            originalUrl + (originalUrl.includes('?') ? '&' : '?') + 'anon=true'
+        )
     }
 
     describe('Standard Teams Microsoft URLs', () => {
@@ -75,7 +80,8 @@ describe('Teams URL Parser', () => {
         test.each(urlsWithParams)('should parse URL with params: %s', (url) => {
             const result = parseMeetingUrlFromJoinInfos(url)
             // Check if it matches the regex pattern for transformation
-            const regex = /https:\/\/teams\.microsoft\.com\/l\/meetup-join\/(.*?)\/(\d+)\?context=(.*?)(?:$|&)/
+            const regex =
+                /https:\/\/teams\.microsoft\.com\/l\/meetup-join\/(.*?)\/(\d+)\?context=(.*?)(?:$|&)/
             if (regex.test(url)) {
                 expect(result.meetingId).toBe(getExpectedV2Url(url))
             } else {
