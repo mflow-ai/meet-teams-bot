@@ -42,9 +42,9 @@ describe('GeminiLiveBot', () => {
                 noone_joined_timeout: 60,
             },
         } as MeetingParams
-        
+
         jest.clearAllMocks()
-        
+
         // Set up environment variable
         process.env.GEMINI_API_KEY = 'valid-api-key'
     })
@@ -55,24 +55,26 @@ describe('GeminiLiveBot', () => {
 
     describe('initialize', () => {
         it('should initialize successfully with valid API key from environment', async () => {
-            await expect(geminiLiveBot.initialize(mockParams)).resolves.toBeUndefined()
+            await expect(
+                geminiLiveBot.initialize(mockParams),
+            ).resolves.toBeUndefined()
             expect(geminiLiveBot.isReady()).toBe(true)
         })
 
         it('should throw error when GEMINI_API_KEY environment variable is missing', async () => {
             delete process.env.GEMINI_API_KEY
-            
+
             await expect(geminiLiveBot.initialize(mockParams)).rejects.toThrow(
-                'GeminiLiveBot initialization failed: GEMINI_API_KEY environment variable is required'
+                'GeminiLiveBot initialization failed: GEMINI_API_KEY environment variable is required',
             )
             expect(geminiLiveBot.isReady()).toBe(false)
         })
 
         it('should handle initialization errors gracefully', async () => {
             process.env.GEMINI_API_KEY = 'invalid-key'
-            
+
             await expect(geminiLiveBot.initialize(mockParams)).rejects.toThrow(
-                'GeminiLiveBot initialization failed: Invalid API key'
+                'GeminiLiveBot initialization failed: Invalid API key',
             )
             expect(geminiLiveBot.isReady()).toBe(false)
         })
@@ -88,16 +90,21 @@ describe('GeminiLiveBot', () => {
         })
 
         it('should start session with custom model', async () => {
-            const sessionConfig = { type: 'gemini', modelName: 'gemini-2.0-flash-exp' }
-            
-            await expect(geminiLiveBot.startSession(sessionConfig)).resolves.toBeUndefined()
+            const sessionConfig = {
+                type: 'gemini',
+                modelName: 'gemini-2.0-flash-exp',
+            }
+
+            await expect(
+                geminiLiveBot.startSession(sessionConfig),
+            ).resolves.toBeUndefined()
         })
 
         it('should throw error if not initialized', async () => {
             const uninitializedBot = new GeminiLiveBot()
-            
+
             await expect(uninitializedBot.startSession()).rejects.toThrow(
-                'GeminiLiveBot not initialized. Call initialize() first.'
+                'GeminiLiveBot not initialized. Call initialize() first.',
             )
         })
     })
@@ -110,29 +117,35 @@ describe('GeminiLiveBot', () => {
 
         it('should handle audio chunk without errors', async () => {
             const audioData = Buffer.from('fake-audio-data')
-            const metadata: AudioChunkMetadata = { 
+            const metadata: AudioChunkMetadata = {
                 timestamp: Date.now(),
                 sampleRate: 16000,
-                channels: 1
+                channels: 1,
             }
-            
-            await expect(geminiLiveBot.sendAudioChunk(audioData, metadata)).resolves.toBeUndefined()
+
+            await expect(
+                geminiLiveBot.sendAudioChunk(audioData, metadata),
+            ).resolves.toBeUndefined()
         })
 
         it('should handle Uint8Array audio data', async () => {
             const audioData = new Uint8Array([1, 2, 3, 4])
-            
-            await expect(geminiLiveBot.sendAudioChunk(audioData)).resolves.toBeUndefined()
+
+            await expect(
+                geminiLiveBot.sendAudioChunk(audioData),
+            ).resolves.toBeUndefined()
         })
 
         it('should handle missing session gracefully', async () => {
             const botWithoutSession = new GeminiLiveBot()
             await botWithoutSession.initialize(mockParams)
-            
+
             const audioData = Buffer.from('fake-audio-data')
-            
+
             // Should not throw, just log warning
-            await expect(botWithoutSession.sendAudioChunk(audioData)).resolves.toBeUndefined()
+            await expect(
+                botWithoutSession.sendAudioChunk(audioData),
+            ).resolves.toBeUndefined()
         })
     })
 
@@ -143,31 +156,33 @@ describe('GeminiLiveBot', () => {
 
         it('should register audio response callback', () => {
             const callback = jest.fn()
-            
+
             expect(() => geminiLiveBot.onAudioResponse(callback)).not.toThrow()
         })
 
         it('should call callback when audio response is received', async () => {
             const callback = jest.fn()
             geminiLiveBot.onAudioResponse(callback)
-            
+
             await geminiLiveBot.startSession()
-            
+
             // Get the mocked session and trigger audio event
             const { Live } = require('@google/genai')
             const mockLive = Live.mock.results[0].value
             const mockSession = await mockLive.connect.mock.results[0].value
-            
+
             // Simulate audio response
             const audioData = new Uint8Array([1, 2, 3, 4])
-            const audioHandler = mockSession.on.mock.calls.find(call => call[0] === 'audio')[1]
+            const audioHandler = mockSession.on.mock.calls.find(
+                (call) => call[0] === 'audio',
+            )[1]
             audioHandler(audioData)
-            
+
             expect(callback).toHaveBeenCalledWith({
                 audioData: audioData,
                 metadata: expect.objectContaining({
-                    timestamp: expect.any(Number)
-                })
+                    timestamp: expect.any(Number),
+                }),
             })
         })
     })
@@ -187,8 +202,10 @@ describe('GeminiLiveBot', () => {
             const { Live } = require('@google/genai')
             const mockLive = Live.mock.results[0].value
             const mockSession = await mockLive.connect.mock.results[0].value
-            mockSession.disconnect.mockRejectedValueOnce(new Error('Disconnect error'))
-            
+            mockSession.disconnect.mockRejectedValueOnce(
+                new Error('Disconnect error'),
+            )
+
             await expect(geminiLiveBot.endSession()).resolves.toBeUndefined()
         })
     })

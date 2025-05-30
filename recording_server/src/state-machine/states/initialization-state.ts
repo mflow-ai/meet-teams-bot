@@ -179,19 +179,25 @@ export class InitializationState extends BaseState {
         try {
             // Check if Gemini API key is available in environment
             const geminiApiKey = process.env.GEMINI_API_KEY
-            
+
             if (geminiApiKey) {
                 console.info('Setting up Gemini Live Bot...')
                 this.context.meetingParticipantBot = new GeminiLiveBot()
-                await this.context.meetingParticipantBot.initialize(this.context.params)
+                await this.context.meetingParticipantBot.initialize(
+                    this.context.params,
+                )
                 console.info('Gemini Live Bot initialized successfully')
             } else {
-                console.info('No GEMINI_API_KEY environment variable found, skipping meeting participant bot setup')
+                console.info(
+                    'No GEMINI_API_KEY environment variable found, skipping meeting participant bot setup',
+                )
             }
         } catch (error) {
             console.error('Meeting participant bot setup failed:', error)
             // Don't throw - meeting participant bot is optional and shouldn't prevent meeting recording
-            console.warn('Continuing without meeting participant bot due to setup failure')
+            console.warn(
+                'Continuing without meeting participant bot due to setup failure',
+            )
         }
     }
 }

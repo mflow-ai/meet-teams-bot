@@ -1,10 +1,15 @@
-import { MeetingParams, BotConfiguration, AudioChunkMetadata, AudioResponse } from '../types'
+import {
+    MeetingParams,
+    BotConfiguration,
+    AudioChunkMetadata,
+    AudioResponse,
+} from '../types'
 
 /**
  * Interface for AI-powered meeting participant bots that can:
  * - Receive and process audio streams from meetings
  * - Respond with audio that gets injected back into the meeting
- * 
+ *
  * Note: This service is designed to only receive audio responses from the AI.
  * Video input may be processed but responses are audio-only.
  */
@@ -26,7 +31,10 @@ export interface IMeetingParticipantBot {
      * @param audioData - Audio data chunk (Buffer or Uint8Array)
      * @param metadata - Metadata about the audio chunk (timestamp, sample rate, etc.)
      */
-    sendAudioChunk(audioData: Buffer | Uint8Array, metadata?: AudioChunkMetadata): Promise<void>
+    sendAudioChunk(
+        audioData: Buffer | Uint8Array,
+        metadata?: AudioChunkMetadata,
+    ): Promise<void>
 
     /**
      * Set up response handler for audio responses from the bot
