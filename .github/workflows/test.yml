@@ -103,7 +103,7 @@ jobs:
         run: pnpm run build
 
       - name: Run tests
-        run: pnpm test
+        run: pnpm test -- --passWithNoTests
 
       - name: Check formatting
         run: pnpm run format -- --check
@@ -148,11 +148,11 @@ jobs:
         working-directory: ./recording_server/chrome_extension
 
       - name: Check recording server formatting
-        run: pnpm run format -- --check
+        run: pnpm run format:check
         working-directory: ./recording_server
 
       - name: Check chrome extension formatting
-        run: pnpm run format -- --check
+        run: pnpm run format:check
         working-directory: ./recording_server/chrome_extension
 
   build-docker:

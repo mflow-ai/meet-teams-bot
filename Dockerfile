@@ -50,18 +50,18 @@ COPY recording_server/package.json recording_server/pnpm-lock.yaml ./recording_s
 COPY recording_server/chrome_extension/package.json recording_server/chrome_extension/pnpm-lock.yaml ./recording_server/chrome_extension/
 
 # Install dependencies for the server and the extension
-RUN pnpm install --frozen-lockfile --prefix recording_server \
-    && pnpm install --frozen-lockfile --prefix recording_server/chrome_extension
+RUN cd recording_server && pnpm install --frozen-lockfile \
+    && cd chrome_extension && pnpm install --frozen-lockfile
 
 # Install Playwright browsers using the local version
-RUN pnpm --prefix recording_server exec playwright install --with-deps chromium
+RUN cd recording_server && pnpm exec playwright install --with-deps chromium
 
 # Copy the rest of the application code
 COPY recording_server ./recording_server
 
 # Build the server and the Chrome extension
-RUN pnpm run build --prefix recording_server \
-    && pnpm run build --prefix recording_server/chrome_extension
+RUN cd recording_server && pnpm run build \
+    && cd chrome_extension && pnpm run build
 
 # Verify extension build
 RUN ls -la /app/recording_server/chrome_extension/dist/ \
