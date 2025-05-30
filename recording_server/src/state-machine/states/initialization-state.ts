@@ -4,7 +4,7 @@ import { MeetingHandle } from '../../meeting'
 import { Streaming } from '../../streaming'
 import { JoinError, JoinErrorCode } from '../../types'
 import { PathManager } from '../../utils/PathManager'
-import { GeminiService } from '../../ai/GeminiService'
+import { GeminiLiveBot } from '../../ai/GeminiLiveBot'
 import { MeetingStateType, StateExecuteResult } from '../types'
 import { BaseState } from './base-state'
 
@@ -57,8 +57,8 @@ export class InitializationState extends BaseState {
                 this.context.params.bot_uuid,
             )
 
-            // Setup AI service if API key is provided
-            await this.setupAiService()
+            // Setup meeting participant bot if enabled
+            await this.setupMeetingParticipantBot()
 
             // All initialization successful
             return this.transition(MeetingStateType.WaitingRoom)
@@ -175,20 +175,23 @@ export class InitializationState extends BaseState {
         }
     }
 
-    private async setupAiService(): Promise<void> {
+    private async setupMeetingParticipantBot(): Promise<void> {
         try {
-            if (this.context.params.geminiApiKey) {
-                console.info('Setting up Gemini AI service...')
-                this.context.aiService = new GeminiService()
-                await this.context.aiService.initialize(this.context.params.geminiApiKey)
-                console.info('Gemini AI service initialized successfully')
+            // Check if Gemini API key is available in environment
+            const geminiApiKey = process.env.GEMINI_API_KEY
+            
+            if (geminiApiKey) {
+                console.info('Setting up Gemini Live Bot...')
+                this.context.meetingParticipantBot = new GeminiLiveBot()
+                await this.context.meetingParticipantBot.initialize(this.context.params)
+                console.info('Gemini Live Bot initialized successfully')
             } else {
-                console.info('No Gemini API key provided, skipping AI service setup')
+                console.info('No GEMINI_API_KEY environment variable found, skipping meeting participant bot setup')
             }
         } catch (error) {
-            console.error('AI service setup failed:', error)
-            // Don't throw - AI service is optional and shouldn't prevent meeting recording
-            console.warn('Continuing without AI service due to setup failure')
+            console.error('Meeting participant bot setup failed:', error)
+            // Don't throw - meeting participant bot is optional and shouldn't prevent meeting recording
+            console.warn('Continuing without meeting participant bot due to setup failure')
         }
     }
 }

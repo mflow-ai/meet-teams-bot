@@ -88,7 +88,6 @@ export type MeetingParams = {
     extra?: any
     zoom_sdk_id?: string
     zoom_sdk_pwd?: string
-    geminiApiKey?: string
 }
 
 export class CancellationToken {
@@ -156,4 +155,26 @@ export enum JoinErrorCode {
     Internal = 'InternalError classic',
     InvalidMeetingUrl = 'InvalidMeetingUrl',
     StreamingSetupFailed = 'StreamingSetupFailed',
+}
+
+// Meeting Participant Bot Types
+export interface BotConfiguration {
+    type: 'gemini' | string
+    modelName?: string
+    [key: string]: any
+}
+
+export interface AudioChunkMetadata {
+    timestamp: number
+    sampleRate?: number
+    channels?: number
+    format?: string
+}
+
+export interface AudioResponse {
+    audioData: Buffer | Uint8Array
+    metadata?: {
+        timestamp: number
+        duration?: number
+    }
 }
