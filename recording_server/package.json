@@ -13,7 +13,7 @@
         "playwright"
     ],
     "engines": {
-        "node": ">= 14.16 <=18"
+        "node": ">= 18.12"
     },
     "dependencies": {
         "amqplib": "^0.10.3",
@@ -80,6 +80,6 @@
     },
     "homepage": "https://github.com/yourusername/meet-teams-bot#readme",
     "volta": {
-        "node": "14.16.1"
+        "node": "18.12.0"
     }
 }
