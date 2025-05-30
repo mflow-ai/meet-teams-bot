@@ -2,17 +2,25 @@
     "name": "meet-teams-bot",
     "version": "1.0.0",
     "description": "Automated meeting recording bot for Google Meet, Microsoft Teams, and Zoom",
-    "keywords": ["meeting", "recording", "bot", "automation", "google-meet", "teams", "zoom", "playwright"],
+    "keywords": [
+        "meeting",
+        "recording",
+        "bot",
+        "automation",
+        "google-meet",
+        "teams",
+        "zoom",
+        "playwright"
+    ],
     "engines": {
         "node": ">= 14.16 <=18"
     },
     "dependencies": {
-        "@playwright/test": "^1.50.1",
         "@types/sharp": "^0.31.1",
         "amqplib": "^0.10.3",
         "async": "^3.2.6",
-        "axios": "0.21.1",
-        "express": "4.17.1",
+        "axios": "^1.9.0",
+        "express": "^4.21.2",
         "fs": "^0.0.1-security",
         "jsdom": "24.0.0",
         "node": "16.14.0",
@@ -29,6 +37,7 @@
         "ws": "8.18.0"
     },
     "devDependencies": {
+        "@playwright/test": "^1.50.1",
         "@types/amqplib": "^0.10.1",
         "@types/async": "^3.2.24",
         "@types/body-parser": "^1.19.0",
