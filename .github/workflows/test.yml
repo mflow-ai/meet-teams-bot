@@ -1,0 +1,170 @@
+name: Test Suite
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  test-recording-server:
+    name: Test Recording Server
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./recording_server
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: latest
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run TypeScript build
+        run: pnpm run build
+
+      - name: Run tests
+        run: pnpm run test
+
+      - name: Run test coverage
+        run: pnpm run test:coverage
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        with:
+          directory: ./recording_server/coverage
+          fail_ci_if_error: false
+
+  test-chrome-extension:
+    name: Test Chrome Extension
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./recording_server/chrome_extension
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: latest
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build extension
+        run: pnpm run build
+
+      - name: Run tests
+        run: pnpm test
+
+      - name: Check formatting
+        run: pnpm run format:check
+
+  lint-and-format:
+    name: Lint and Format Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: latest
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install recording server dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: ./recording_server
+
+      - name: Install chrome extension dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: ./recording_server/chrome_extension
+
+      - name: Check recording server formatting
+        run: pnpm run format:check
+        working-directory: ./recording_server
+
+      - name: Check chrome extension formatting
+        run: pnpm run format:check
+        working-directory: ./recording_server/chrome_extension
+
+  build-docker:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t meet-teams-bot:test .
+
+      - name: Test Docker image
+        run: docker run --rm meet-teams-bot:test --help || true

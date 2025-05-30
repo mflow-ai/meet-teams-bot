@@ -251,8 +251,14 @@ export class Transcoder extends EventEmitter {
             await this.stopFFmpeg()
 
             // Create audio file for transcription if in video mode and transcription is enabled
-            if (!this.isAudioOnly && this.config.enableTranscriptionChunking && this.pathManager) {
-                console.log('Creating audio file for transcription before chunking...')
+            if (
+                !this.isAudioOnly &&
+                this.config.enableTranscriptionChunking &&
+                this.pathManager
+            ) {
+                console.log(
+                    'Creating audio file for transcription before chunking...',
+                )
                 await this.createAudioFileForTranscription()
             }
 
@@ -322,35 +328,53 @@ export class Transcoder extends EventEmitter {
         if (this.isAudioOnly) {
             // SIMPLIFIED Audio-only configuration
             ffmpegArgs = [
-                '-f', 'webm',           // Input format (WebM from chunks)
-                '-i', 'pipe:0',         // Read from stdin
-                '-vn',                  // No video
-                '-acodec', 'pcm_s16le', // WAV codec
-                '-ac', '1',             // Mono
-                '-ar', '16000',         // 16kHz sample rate
-                '-f', 'wav',            // Output format
-                '-y',                   // Overwrite output
+                '-f',
+                'webm', // Input format (WebM from chunks)
+                '-i',
+                'pipe:0', // Read from stdin
+                '-vn', // No video
+                '-acodec',
+                'pcm_s16le', // WAV codec
+                '-ac',
+                '1', // Mono
+                '-ar',
+                '16000', // 16kHz sample rate
+                '-f',
+                'wav', // Output format
+                '-y', // Overwrite output
                 this.config.outputPath,
             ]
         } else {
             // SIMPLIFIED Video + Audio configuration (single output MP4)
             ffmpegArgs = [
-                '-f', 'webm',           // Input format (WebM from browser chunks)
-                '-i', 'pipe:0',         // Read from stdin
+                '-f',
+                'webm', // Input format (WebM from browser chunks)
+                '-i',
+                'pipe:0', // Read from stdin
                 // Video settings - simple and fast
-                '-c:v', 'libx264',      // H264 codec
-                '-preset', 'faster',    // Balanced speed/quality
-                '-crf', '23',           // Good quality
-                '-pix_fmt', 'yuv420p',  // Compatibility
+                '-c:v',
+                'libx264', // H264 codec
+                '-preset',
+                'faster', // Balanced speed/quality
+                '-crf',
+                '23', // Good quality
+                '-pix_fmt',
+                'yuv420p', // Compatibility
                 // Audio settings
-                '-c:a', 'aac',          // AAC codec
-                '-b:a', '128k',         // Audio bitrate
-                '-ac', '2',             // Stereo
-                '-ar', '44100',         // Standard sample rate
+                '-c:a',
+                'aac', // AAC codec
+                '-b:a',
+                '128k', // Audio bitrate
+                '-ac',
+                '2', // Stereo
+                '-ar',
+                '44100', // Standard sample rate
                 // Output settings
-                '-f', 'mp4',            // MP4 format
-                '-movflags', '+faststart', // Optimize for streaming
-                '-y',                   // Overwrite output
+                '-f',
+                'mp4', // MP4 format
+                '-movflags',
+                '+faststart', // Optimize for streaming
+                '-y', // Overwrite output
                 this.config.outputPath,
             ]
         }
@@ -367,7 +391,7 @@ export class Transcoder extends EventEmitter {
             isAudioOnly: this.isAudioOnly,
             outputPath: this.config.outputPath,
             inputFormat: 'WebM chunks from browser',
-            outputFormat: this.isAudioOnly ? 'WAV' : 'MP4'
+            outputFormat: this.isAudioOnly ? 'WAV' : 'MP4',
         })
     }
 
@@ -382,7 +406,11 @@ export class Transcoder extends EventEmitter {
         this.ffmpegProcess.stderr?.on('data', (data) => {
             const output = data.toString()
             // Only log important FFmpeg messages, not all debug info
-            if (output.includes('error') || output.includes('Error') || output.includes('failed')) {
+            if (
+                output.includes('error') ||
+                output.includes('Error') ||
+                output.includes('failed')
+            ) {
                 console.error('FFmpeg stderr:', output)
             }
         })
@@ -459,7 +487,10 @@ export class Transcoder extends EventEmitter {
             })
 
             // Gracefully close stdin to signal end of input
-            if (this.ffmpegProcess.stdin && !this.ffmpegProcess.stdin.destroyed) {
+            if (
+                this.ffmpegProcess.stdin &&
+                !this.ffmpegProcess.stdin.destroyed
+            ) {
                 console.log('Closing FFmpeg stdin...')
                 this.ffmpegProcess.stdin.end()
             }
@@ -512,10 +543,7 @@ export class Transcoder extends EventEmitter {
                 fs.unlinkSync(this.config.outputPath)
                 console.log('Local file deleted successfully')
             } catch (deleteError) {
-                console.error(
-                    'Failed to delete local file:',
-                    deleteError,
-                )
+                console.error('Failed to delete local file:', deleteError)
             }
 
             // Mark files as uploaded to prevent duplicate uploads
@@ -531,14 +559,16 @@ export class Transcoder extends EventEmitter {
         if (!this.pathManager || this.isAudioOnly) return
 
         const audioPath = this.config.outputPath.replace('.mp4', '.wav')
-        
+
         console.log('Creating audio file for transcription from video...')
         console.log(`Input MP4 file: ${this.config.outputPath}`)
         console.log(`Output WAV file: ${audioPath}`)
 
         // Verify the input MP4 file exists
         if (!fs.existsSync(this.config.outputPath)) {
-            throw new Error(`Input MP4 file does not exist: ${this.config.outputPath}`)
+            throw new Error(
+                `Input MP4 file does not exist: ${this.config.outputPath}`,
+            )
         }
 
         const inputStats = fs.statSync(this.config.outputPath)
@@ -546,19 +576,27 @@ export class Transcoder extends EventEmitter {
 
         return new Promise<void>((resolve, reject) => {
             const ffmpeg = spawn('ffmpeg', [
-                '-i', this.config.outputPath,  // Input MP4 file
-                '-vn',                          // No video
-                '-acodec', 'pcm_s16le',        // WAV codec
-                '-ac', '1',                     // Mono
-                '-ar', '16000',                 // 16kHz for transcription
-                '-y',                           // Overwrite
-                audioPath,                      // Output WAV file
+                '-i',
+                this.config.outputPath, // Input MP4 file
+                '-vn', // No video
+                '-acodec',
+                'pcm_s16le', // WAV codec
+                '-ac',
+                '1', // Mono
+                '-ar',
+                '16000', // 16kHz for transcription
+                '-y', // Overwrite
+                audioPath, // Output WAV file
             ])
 
             ffmpeg.stderr?.on('data', (data) => {
                 const output = data.toString()
                 // Log important FFmpeg messages
-                if (output.includes('error') || output.includes('Error') || output.includes('failed')) {
+                if (
+                    output.includes('error') ||
+                    output.includes('Error') ||
+                    output.includes('failed')
+                ) {
                     console.error('FFmpeg audio extraction stderr:', output)
                 }
             })
@@ -568,15 +606,25 @@ export class Transcoder extends EventEmitter {
                     // Verify the output file was created
                     if (fs.existsSync(audioPath)) {
                         const outputStats = fs.statSync(audioPath)
-                        console.log(`Audio file for transcription created successfully: ${audioPath} (${outputStats.size} bytes)`)
+                        console.log(
+                            `Audio file for transcription created successfully: ${audioPath} (${outputStats.size} bytes)`,
+                        )
                         this.config.audioOutputPath = audioPath
                         resolve()
                     } else {
-                        reject(new Error('Audio file was not created despite FFmpeg success'))
+                        reject(
+                            new Error(
+                                'Audio file was not created despite FFmpeg success',
+                            ),
+                        )
                     }
                 } else {
-                    console.error(`Audio extraction failed with FFmpeg exit code: ${code}`)
-                    reject(new Error(`Audio extraction failed with code ${code}`))
+                    console.error(
+                        `Audio extraction failed with FFmpeg exit code: ${code}`,
+                    )
+                    reject(
+                        new Error(`Audio extraction failed with code ${code}`),
+                    )
                 }
             })
 
@@ -632,7 +680,9 @@ export class Transcoder extends EventEmitter {
 
         console.log('Starting audio chunking process for transcription')
         console.log(`Looking for audio file at: ${audioFilePath}`)
-        console.log(`Audio mode: ${this.isAudioOnly ? 'audio-only' : 'video with separate audio file'}`)
+        console.log(
+            `Audio mode: ${this.isAudioOnly ? 'audio-only' : 'video with separate audio file'}`,
+        )
 
         if (!fs.existsSync(audioFilePath)) {
             console.error('Audio file not found for chunking:', audioFilePath)
@@ -640,7 +690,7 @@ export class Transcoder extends EventEmitter {
             try {
                 const dirPath = require('path').dirname(audioFilePath)
                 const files = fs.readdirSync(dirPath)
-                files.forEach(file => console.error(`  - ${file}`))
+                files.forEach((file) => console.error(`  - ${file}`))
             } catch (dirError) {
                 console.error('Could not list directory contents:', dirError)
             }

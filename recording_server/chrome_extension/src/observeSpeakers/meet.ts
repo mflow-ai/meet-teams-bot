@@ -40,7 +40,7 @@ export async function getSpeakerRootToObserve(
                         height === 66.63)
                 )
             })
-            
+
             // We no longer remove these divs to avoid disrupting the interface
             // filteredDivs.forEach((div) => {
             //     div.remove()
@@ -76,44 +76,49 @@ export async function getSpeakerRootToObserve(
 // Fonction pour observer toutes les iframes existantes et futures
 export function observeIframes(callback: (iframe: HTMLIFrameElement) => void) {
     // Observer les iframes existantes
-    document.querySelectorAll('iframe').forEach(iframe => {
-        callback(iframe);
-    });
+    document.querySelectorAll('iframe').forEach((iframe) => {
+        callback(iframe)
+    })
 
     // Observe for new iframes
     const observer = new MutationObserver((mutations) => {
-        mutations.forEach(mutation => {
-            mutation.addedNodes.forEach(node => {
+        mutations.forEach((mutation) => {
+            mutation.addedNodes.forEach((node) => {
                 if (node.nodeName === 'IFRAME') {
-                    callback(node as HTMLIFrameElement);
+                    callback(node as HTMLIFrameElement)
                 }
                 // Look for iframes inside added nodes
                 if (node.nodeType === Node.ELEMENT_NODE) {
-                    (node as Element).querySelectorAll('iframe').forEach(iframe => {
-                        callback(iframe);
-                    });
+                    ;(node as Element)
+                        .querySelectorAll('iframe')
+                        .forEach((iframe) => {
+                            callback(iframe)
+                        })
                 }
-            });
-        });
-    });
+            })
+        })
+    })
 
     observer.observe(document.body, {
         childList: true,
-        subtree: true
-    });
+        subtree: true,
+    })
 
-    return observer;
+    return observer
 }
 
 // Helper to get a document from an iframe
 export function getIframeDocument(iframe: HTMLIFrameElement): Document | null {
     try {
         // Check if the iframe is accessible (same origin)
-        return iframe.contentDocument || iframe.contentWindow?.document || null;
+        return iframe.contentDocument || iframe.contentWindow?.document || null
     } catch (error) {
         // If the iframe is cross-origin we cannot access it
-        console.log('Cannot access iframe content (likely cross-origin):', error);
-        return null;
+        console.log(
+            'Cannot access iframe content (likely cross-origin):',
+            error,
+        )
+        return null
     }
 }
 
@@ -359,14 +364,14 @@ export function getSpeakerFromDocument(
 
 // In the function that initializes speaker observation
 const iframeObserver = observeIframes((iframe) => {
-    const iframeDoc = getIframeDocument(iframe);
+    const iframeDoc = getIframeDocument(iframe)
     if (iframeDoc) {
         // Create a new observer for the iframe content
         const observer = new MutationObserver((mutations) => {
             // Same logic as the main observer
             // Process mutations to detect speaker changes
-        });
-        
+        })
+
         // Observe the iframe document with the same parameters
         observer.observe(iframeDoc, {
             attributes: true,
@@ -374,8 +379,8 @@ const iframeObserver = observeIframes((iframe) => {
             childList: true,
             subtree: true,
             attributeFilter: ['class', 'aria-label'],
-        });
+        })
     }
-});
+})
 
 // Store this iframeObserver so it can be disconnected later if needed

@@ -30,5 +30,5 @@ function generateExtensionKey(): string {
 const key = generateExtensionKey()
 console.log(
     key,
-    "copy to manifest.json then load the extension to get the extension_id and put it in the recording_server",
+    'copy to manifest.json then load the extension to get the extension_id and put it in the recording_server',
 )
