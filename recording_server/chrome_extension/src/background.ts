@@ -36,7 +36,7 @@ export async function start_speakers_observer(
     bot_name: string,
     meetingProvider: MeetingProvider,
 ) {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
     if (tab.id) {
         await (chrome as any).scripting.executeScript({
             target: { tabId: tab.id },
@@ -44,13 +44,13 @@ export async function start_speakers_observer(
                 window.RECORDING_MODE = ${JSON.stringify(recording_mode)};
                 window.BOT_NAME = ${JSON.stringify(bot_name)};
                 window.MEETING_PROVIDER = ${JSON.stringify(meetingProvider)};
-            `
-        });
-        
+            `,
+        })
+
         await (chrome as any).scripting.executeScript({
             target: { tabId: tab.id },
-            files: ['./js/observeSpeakers.js']
-        });
+            files: ['./js/observeSpeakers.js'],
+        })
     }
 }
 
@@ -59,20 +59,20 @@ export async function remove_shitty_html(
     recording_mode: RecordingMode,
     meetingProvider: MeetingProvider,
 ) {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
     if (tab.id) {
         await (chrome as any).scripting.executeScript({
             target: { tabId: tab.id },
             code: `
                 window.RECORDING_MODE = ${JSON.stringify(recording_mode)};
                 window.MEETING_PROVIDER = ${JSON.stringify(meetingProvider)};
-            `
-        });
-        
+            `,
+        })
+
         await (chrome as any).scripting.executeScript({
             target: { tabId: tab.id },
-            files: ['./js/shittyHtml.js']
-        });
+            files: ['./js/shittyHtml.js'],
+        })
     }
 }
 
@@ -87,7 +87,7 @@ export async function stopAudioStreaming() {
 
 // Message handling for V3 service worker
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    (async () => {
+    ;(async () => {
         try {
             switch (message.action) {
                 case 'startRecording':
@@ -95,54 +95,57 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                         message.local_recording_server_location,
                         message.chunkDuration,
                         message.streaming_output,
-                        message.streaming_audio_frequency
-                    );
-                    sendResponse({ success: true, recordingId });
-                    break;
-                
+                        message.streaming_audio_frequency,
+                    )
+                    sendResponse({ success: true, recordingId })
+                    break
+
                 case 'stopMediaRecorder':
-                    await stopMediaRecorder();
-                    sendResponse({ success: true });
-                    break;
-                
+                    await stopMediaRecorder()
+                    sendResponse({ success: true })
+                    break
+
                 case 'stopAudioStreaming':
-                    await stopAudioStreaming();
-                    sendResponse({ success: true });
-                    break;
-                
+                    await stopAudioStreaming()
+                    sendResponse({ success: true })
+                    break
+
                 case 'start_speakers_observer':
                     await start_speakers_observer(
                         message.recording_mode,
                         message.bot_name,
-                        message.meetingProvider
-                    );
-                    sendResponse({ success: true });
-                    break;
-                
+                        message.meetingProvider,
+                    )
+                    sendResponse({ success: true })
+                    break
+
                 case 'remove_shitty_html':
                     await remove_shitty_html(
                         message.recording_mode,
-                        message.meetingProvider
-                    );
-                    sendResponse({ success: true });
-                    break;
-                
+                        message.meetingProvider,
+                    )
+                    sendResponse({ success: true })
+                    break
+
                 case 'test':
-                    sendResponse({ 
-                        success: true, 
-                        message: 'Extension is working!', 
+                    sendResponse({
+                        success: true,
+                        message: 'Extension is working!',
                         extensionId: chrome.runtime.id,
-                        manifest: chrome.runtime.getManifest()?.name 
-                    });
-                    break;
-                
+                        manifest: chrome.runtime.getManifest()?.name,
+                    })
+                    break
+
                 default:
-                    sendResponse({ success: false, error: 'Unknown action' });
+                    sendResponse({ success: false, error: 'Unknown action' })
             }
         } catch (error) {
-            sendResponse({ success: false, error: error instanceof Error ? error.message : String(error) });
+            sendResponse({
+                success: false,
+                error: error instanceof Error ? error.message : String(error),
+            })
         }
-    })();
-    
-    return true; // Keep the message channel open for async response
-});
+    })()
+
+    return true // Keep the message channel open for async response
+})
