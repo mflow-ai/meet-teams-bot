@@ -31,12 +31,7 @@ export async function openBrowser(
         RESOLUTION = P480
     }
 
-    const pathToExtension = join(
-        __dirname,
-        '..',
-        'chrome_extension',
-        'dist',
-    )
+    const pathToExtension = join(__dirname, '..', 'chrome_extension', 'dist')
     console.log('Path to Extension : ', pathToExtension)
 
     const width = RESOLUTION.width
@@ -55,19 +50,19 @@ export async function openBrowser(
         // Validate critical extension files
         const manifestPath = join(pathToExtension, 'manifest.json')
         const backgroundPath = join(pathToExtension, 'js', 'background.js')
-        
+
         if (!fs.existsSync(manifestPath)) {
             console.error(`Manifest not found: ${manifestPath}`)
             throw new Error('Extension manifest missing')
         }
-        
+
         if (!fs.existsSync(backgroundPath)) {
             console.error(`Background script not found: ${backgroundPath}`)
             throw new Error('Extension background script missing')
         }
 
         console.log('Extension files validated successfully')
-        
+
         // Log manifest details for debugging
         try {
             const manifestContent = fs.readFileSync(manifestPath, 'utf8')
@@ -75,7 +70,9 @@ export async function openBrowser(
             console.log(`Extension name: ${manifest.name}`)
             console.log(`Manifest version: ${manifest.manifest_version}`)
             console.log(`Extension version: ${manifest.version}`)
-            console.log(`Background scripts: ${manifest.background?.scripts || 'none'}`)
+            console.log(
+                `Background scripts: ${manifest.background?.scripts || 'none'}`,
+            )
         } catch (err) {
             console.error('Error reading manifest:', err)
         }
@@ -130,7 +127,9 @@ export async function openBrowser(
             })
             page.on('response', (response) => {
                 if (response.status() >= 400) {
-                    console.error(`Chrome HTTP Error: ${response.status()} ${response.url()}`)
+                    console.error(
+                        `Chrome HTTP Error: ${response.status()} ${response.url()}`,
+                    )
                 }
             })
         })
@@ -141,14 +140,14 @@ export async function openBrowser(
         })
 
         console.log('Setting up V3 extension with service worker...')
-        
+
         // Create a temporary page to trigger extension loading
         const tempPage = await context.newPage()
         await tempPage.close()
-        
+
         // Give the service worker a moment to initialize
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+
         console.log('✅ Extension service worker should be running')
         return { browser: context, backgroundPage: null }
     } catch (error) {
