@@ -6,7 +6,7 @@ export default defineConfig({
   outDir: 'dist',
   sourcemap: true,
   clean: true,
-  target: 'node18',
+  target: 'node22',
   keepNames: true,
   skipNodeModulesBundle: true,
   external: [

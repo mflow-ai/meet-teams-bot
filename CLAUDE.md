@@ -41,15 +41,21 @@ The system consists of two main components:
 - **Media Capture**: Records tab audio/video and sends chunks to server
 - **Speaker Detection**: Observes DOM changes to identify active speakers
 - **Platform Integration**: Specific logic for Meet and Teams DOM manipulation
+- **Manifest V3**: Modern Chrome extension format with service worker background
 
 **✅ GEMINI INTEGRATION READY:**
 - Extension captures media and sends to server via existing WebSocket
 - Server can relay audio/video streams to `GeminiLiveBot` for real-time processing
 - `IMeetingParticipantBot` interface supports both audio and video chunk processing
 
+**✅ V3 COMPATIBILITY:**
+- Service worker background (replaces persistent background pages)
+- `chrome.scripting.executeScript` API for content injection
+- Modern permissions model with host_permissions separation
+
 ## Key Technologies
 
-- **TypeScript 5.4+** with Node.js 18.12+
+- **TypeScript 5.4+** with Node.js 22.0+
 - **Playwright** for browser automation
 - **Express.js** for API endpoints
 - **Winston** for structured logging
@@ -82,6 +88,7 @@ pnpm run start-serverless:debug  # Serverless debug mode
 
 # Chrome extension
 pnpm run generate_extension_key  # Generate extension key (required once)
+pnpm run debug-extension         # Launch Chrome with extension for testing
 
 # Testing and quality
 pnpm run test               # Run Jest tests
@@ -273,7 +280,18 @@ The application automatically detects its mode:
 Located in `chrome_extension/`:
 - Uses Webpack for building (`webpack.{common,dev,prod}.js`)
 - TypeScript source in `src/` with platform-specific modules
-- Manifest v3 configuration in `public/manifest.json`
+- **Manifest V3** configuration in `public/manifest.json`
+
+**✅ V3 FEATURES:**
+- **Service Worker Background**: Replaces persistent background pages for better performance
+- **chrome.scripting API**: Modern content script injection with `executeScript()`
+- **Separated Permissions**: `permissions` for APIs, `host_permissions` for web access
+- **Message-Based Architecture**: All extension functions accessible via `chrome.runtime.sendMessage`
+
+**🧪 TESTING:**
+- Use `pnpm run debug-extension` to launch Chrome with extension loaded
+- Verify extension in DevTools console: `testExtension()`
+- Check `chrome://extensions/` for extension status and errors
 
 ## Logging & Debugging
 
@@ -346,3 +364,9 @@ Located in `chrome_extension/`:
 - Source maps enable TypeScript debugging in container
 - Inspector port 9229 must be available for debugging
 - Container debugging works with both local and remote development
+
+**✅ EXTENSION DEBUG NOTES:**
+- Extension uses Manifest V3 with service worker (no background page)
+- Use `pnpm run debug-extension` to test extension functionality
+- Service workers start on-demand and may restart automatically
+- Check `chrome://extensions/` for extension errors and status

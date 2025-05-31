@@ -19,7 +19,10 @@ module.exports = {
     optimization: {
         splitChunks: {
             name: 'vendor',
-            chunks: 'initial',
+            chunks: (chunk) => {
+                // Don't split chunks for background script (service worker)
+                return chunk.name !== 'background';
+            },
         },
     },
     module: {

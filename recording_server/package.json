@@ -13,7 +13,7 @@
         "playwright"
     ],
     "engines": {
-        "node": ">= 18.12"
+        "node": ">= 22.0.0"
     },
     "dependencies": {
         "@google/genai": "^0.3.0",
@@ -23,7 +23,6 @@
         "express": "^4.21.2",
         "fs": "^0.0.1-security",
         "jsdom": "24.0.0",
-        "node": "16.14.0",
         "node-fetch": "^2.7.0",
         "path": "^0.12.7",
         "ramda": "0.29.1",
@@ -65,6 +64,7 @@
         "start:debug": "node --inspect=0.0.0.0:9229 dist/main.js",
         "start-serverless:debug": "SERVERLESS=true node --inspect=0.0.0.0:9229 dist/main.js",
         "generate_extension_key": "ts-node src/browser/generate-extension-key.ts",
+        "calculate_extension_id": "ts-node src/browser/calculate-extension-id.ts",
         "clean": "rimraf coverage dist tmp",
         "build": "echo '{\"buildDate\": \"'$(date -u +'%Y-%m-%dT%H:%M:%SZ')'\"}' > src/buildInfo.json && tsup",
         "watch": "tsup --watch",
@@ -73,7 +73,8 @@
         "format:check": "prettier --log-level warn --check \"src/**/*.{jsx,js,ts}\"",
         "test": "jest",
         "test:watch": "jest --watch",
-        "test:coverage": "jest --coverage"
+        "test:coverage": "jest --coverage",
+        "debug-extension": "ts-node debug-extension.ts"
     },
     "author": "Meet Teams Bot Contributors",
     "license": "Apache-2.0",

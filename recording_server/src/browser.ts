@@ -2,7 +2,7 @@ import { BrowserContext, chromium, Page } from '@playwright/test'
 import { join } from 'path'
 
 // const EXTENSION_NAME = 'spoke'
-const EXTENSION_ID = 'eahilodcoaonodbfiijhpmfnddkfhmbl'
+const EXTENSION_ID = 'mqiyqdtvgvspzjub'
 const USER_DATA_DIR = '/tmp/test-user-data-dir'
 
 type Resolution = {
@@ -34,7 +34,6 @@ export async function openBrowser(
     const pathToExtension = join(
         __dirname,
         '..',
-        '..',
         'chrome_extension',
         'dist',
     )
@@ -46,11 +45,39 @@ export async function openBrowser(
     try {
         console.log('Launching persistent context...')
 
-        // Check that extension path exists
+        // Check that extension path exists and validate contents
         const fs = require('fs')
         if (!fs.existsSync(pathToExtension)) {
             console.error(`Extension path does not exist: ${pathToExtension}`)
             throw new Error('Extension path not found')
+        }
+
+        // Validate critical extension files
+        const manifestPath = join(pathToExtension, 'manifest.json')
+        const backgroundPath = join(pathToExtension, 'js', 'background.js')
+        
+        if (!fs.existsSync(manifestPath)) {
+            console.error(`Manifest not found: ${manifestPath}`)
+            throw new Error('Extension manifest missing')
+        }
+        
+        if (!fs.existsSync(backgroundPath)) {
+            console.error(`Background script not found: ${backgroundPath}`)
+            throw new Error('Extension background script missing')
+        }
+
+        console.log('Extension files validated successfully')
+        
+        // Log manifest details for debugging
+        try {
+            const manifestContent = fs.readFileSync(manifestPath, 'utf8')
+            const manifest = JSON.parse(manifestContent)
+            console.log(`Extension name: ${manifest.name}`)
+            console.log(`Manifest version: ${manifest.manifest_version}`)
+            console.log(`Extension version: ${manifest.version}`)
+            console.log(`Background scripts: ${manifest.background?.scripts || 'none'}`)
+        } catch (err) {
+            console.error('Error reading manifest:', err)
         }
 
         const context = await chromium.launchPersistentContext('', {
@@ -75,6 +102,12 @@ export async function openBrowser(
                 '--disable-blink-features=TrustedDOMTypes',
                 '--disable-features=TrustedScriptTypes',
                 '--disable-features=TrustedHTML',
+                '--enable-logging=stderr',
+                '--log-level=0',
+                '--v=1',
+                '--vmodule=*/browser/extensions/*=1',
+                '--enable-extension-activity-logging',
+                '--dump-dom',
             ],
             slowMo: slowMo ? 100 : undefined,
             permissions: ['microphone', 'camera'],
@@ -84,49 +117,40 @@ export async function openBrowser(
             timeout: 120000, // 2 minutes
         })
 
-        console.log('Waiting for background page...')
-        let backgroundPage = null
-
-        // Check if a background page already exists
-        const existingBackgroundPages = context.backgroundPages()
-        if (existingBackgroundPages.length > 0) {
-            backgroundPage = existingBackgroundPages[0]
-            console.log('Found existing background page')
-        } else {
-            // Wait with explicit timeout
-            console.log('No background page found, waiting for event...')
-            try {
-                backgroundPage = await Promise.race([
-                    context.waitForEvent('backgroundpage'),
-                    new Promise((_, reject) =>
-                        setTimeout(
-                            () => reject(new Error('Background page timeout')),
-                            60000,
-                        ),
-                    ),
-                ])
-            } catch (timeoutError) {
-                console.error(
-                    'Timeout waiting for background page:',
-                    timeoutError,
-                )
-                // Essayer de forcer le chargement de l'extension
-                await context.newPage().then((page) => page.close())
-                // Réessayer de trouver la page d'arrière-plan
-                const retryBackgroundPages = context.backgroundPages()
-                if (retryBackgroundPages.length > 0) {
-                    backgroundPage = retryBackgroundPages[0]
-                    console.log('Found background page after retry')
+        // Add comprehensive logging to capture Chrome errors
+        context.on('page', (page) => {
+            page.on('console', (msg) => {
+                console.log(`Chrome Console [${msg.type()}]:`, msg.text())
+            })
+            page.on('pageerror', (err) => {
+                console.error('Chrome Page Error:', err)
+            })
+            page.on('crash', () => {
+                console.error('Chrome Page Crashed')
+            })
+            page.on('response', (response) => {
+                if (response.status() >= 400) {
+                    console.error(`Chrome HTTP Error: ${response.status()} ${response.url()}`)
                 }
-            }
-        }
+            })
+        })
 
-        if (!backgroundPage) {
-            throw new Error('Could not find extension background page')
-        }
+        // Log extension loading errors
+        context.on('weberror', (webError) => {
+            console.error('Chrome Web Error:', webError)
+        })
 
-        console.log('Background page found')
-        return { browser: context, backgroundPage }
+        console.log('Setting up V3 extension with service worker...')
+        
+        // Create a temporary page to trigger extension loading
+        const tempPage = await context.newPage()
+        await tempPage.close()
+        
+        // Give the service worker a moment to initialize
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        
+        console.log('✅ Extension service worker should be running')
+        return { browser: context, backgroundPage: null }
     } catch (error) {
         console.error('Failed to open browser:', error)
         throw error

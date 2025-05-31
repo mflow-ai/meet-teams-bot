@@ -36,20 +36,22 @@ export async function start_speakers_observer(
     bot_name: string,
     meetingProvider: MeetingProvider,
 ) {
-    chrome.tabs.executeScript(
-        {
-            code: `var RECORDING_MODE = ${JSON.stringify(
-                recording_mode,
-            )}; var BOT_NAME = ${JSON.stringify(
-                bot_name,
-            )}; var MEETING_PROVIDER=${JSON.stringify(meetingProvider)}`,
-        },
-        function () {
-            chrome.tabs.executeScript({
-                file: './js/observeSpeakers.js',
-            })
-        },
-    )
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab.id) {
+        await (chrome as any).scripting.executeScript({
+            target: { tabId: tab.id },
+            code: `
+                window.RECORDING_MODE = ${JSON.stringify(recording_mode)};
+                window.BOT_NAME = ${JSON.stringify(bot_name)};
+                window.MEETING_PROVIDER = ${JSON.stringify(meetingProvider)};
+            `
+        });
+        
+        await (chrome as any).scripting.executeScript({
+            target: { tabId: tab.id },
+            files: ['./js/observeSpeakers.js']
+        });
+    }
 }
 
 // Launch shittyHtml.js() script inside web page DOM (Meet, teams ...)
@@ -57,18 +59,21 @@ export async function remove_shitty_html(
     recording_mode: RecordingMode,
     meetingProvider: MeetingProvider,
 ) {
-    chrome.tabs.executeScript(
-        {
-            code: `var RECORDING_MODE = ${JSON.stringify(
-                recording_mode,
-            )}; var MEETING_PROVIDER=${JSON.stringify(meetingProvider)}`,
-        },
-        function () {
-            chrome.tabs.executeScript({
-                file: './js/shittyHtml.js',
-            })
-        },
-    )
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab.id) {
+        await (chrome as any).scripting.executeScript({
+            target: { tabId: tab.id },
+            code: `
+                window.RECORDING_MODE = ${JSON.stringify(recording_mode)};
+                window.MEETING_PROVIDER = ${JSON.stringify(meetingProvider)};
+            `
+        });
+        
+        await (chrome as any).scripting.executeScript({
+            target: { tabId: tab.id },
+            files: ['./js/shittyHtml.js']
+        });
+    }
 }
 
 export async function stopMediaRecorder(): Promise<void> {
@@ -80,44 +85,64 @@ export async function stopAudioStreaming() {
     SoundStreamer.instance?.stop()
 }
 
-function setUserAgent(window: Window, userAgent: string) {
-    // Works on Firefox, Chrome, Opera and IE9+
-    if ((navigator as any).__defineGetter__) {
-        Object.defineProperty(navigator, 'userAgent', {
-            get: function () {
-                return userAgent
-            },
-        })
-    } else if (Object.defineProperty) {
-        Object.defineProperty(navigator, 'userAgent', {
-            get: function () {
-                return userAgent
-            },
-        })
-    }
-    // Works on Safari
-    if (window.navigator.userAgent !== userAgent) {
-        const userAgentProp = {
-            get: function () {
-                return userAgent
-            },
-        }
+// Message handling for V3 service worker
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    (async () => {
         try {
-            Object.defineProperty(window.navigator, 'userAgent', userAgentProp)
-        } catch (e) {
-            // console.warn('Failed to set userAgent', e)
+            switch (message.action) {
+                case 'startRecording':
+                    const recordingId = await startRecording(
+                        message.local_recording_server_location,
+                        message.chunkDuration,
+                        message.streaming_output,
+                        message.streaming_audio_frequency
+                    );
+                    sendResponse({ success: true, recordingId });
+                    break;
+                
+                case 'stopMediaRecorder':
+                    await stopMediaRecorder();
+                    sendResponse({ success: true });
+                    break;
+                
+                case 'stopAudioStreaming':
+                    await stopAudioStreaming();
+                    sendResponse({ success: true });
+                    break;
+                
+                case 'start_speakers_observer':
+                    await start_speakers_observer(
+                        message.recording_mode,
+                        message.bot_name,
+                        message.meetingProvider
+                    );
+                    sendResponse({ success: true });
+                    break;
+                
+                case 'remove_shitty_html':
+                    await remove_shitty_html(
+                        message.recording_mode,
+                        message.meetingProvider
+                    );
+                    sendResponse({ success: true });
+                    break;
+                
+                case 'test':
+                    sendResponse({ 
+                        success: true, 
+                        message: 'Extension is working!', 
+                        extensionId: chrome.runtime.id,
+                        manifest: chrome.runtime.getManifest()?.name 
+                    });
+                    break;
+                
+                default:
+                    sendResponse({ success: false, error: 'Unknown action' });
+            }
+        } catch (error) {
+            sendResponse({ success: false, error: error instanceof Error ? error.message : String(error) });
         }
-    }
-}
-
-setUserAgent(
-    window,
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36',
-)
-
-const w = window as any
-w.startRecording = startRecording // Start screen recording
-w.stopMediaRecorder = stopMediaRecorder // stop screen recording
-w.stopAudioStreaming = stopAudioStreaming // Stop audio streaming
-w.start_speakers_observer = start_speakers_observer // Start speakers observer
-w.remove_shitty_html = remove_shitty_html // Remove shitty Html
+    })();
+    
+    return true; // Keep the message channel open for async response
+});

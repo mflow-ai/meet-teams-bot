@@ -273,6 +273,7 @@ docker-compose up app-prod
 - Uses `docker run -i` (like run_bot.sh) instead of docker-compose
 - Pipes selected JSON config directly to container's stdin
 - Container reads config in serverless mode via `process.stdin`
+- Chrome extension built at `/app/recording_server/chrome_extension/dist/`
 
 **Alternative Methods:**
 ```bash
